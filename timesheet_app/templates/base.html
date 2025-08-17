@@ -1,0 +1,52 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}TimesheetApp{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .brand { font-weight: 800; letter-spacing: .5px; }
+    .nav-link.active { font-weight: 600; }
+    .card-kpi { border-left: 4px solid #4e73df; }
+  </style>
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container">
+    <a class="navbar-brand brand" href="{% url 'home' %}">TimesheetApp</a>
+    <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="nav">
+      <ul class="navbar-nav ms-auto">
+        {% if user.is_authenticated %}
+          {% if user.role == 'manager' %}
+            <li class="nav-item"><a class="nav-link" href="{% url 'manager_dashboard' %}">Manager Dashboard</a></li>
+          {% else %}
+            <li class="nav-item"><a class="nav-link" href="{% url 'employee_dashboard' %}">My Dashboard</a></li>
+          {% endif %}
+          <li class="nav-item"><a class="nav-link" href="{% url 'logout' %}">Logout</a></li>
+        {% else %}
+          <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Login</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'signup' %}">Sign Up</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<main class="container my-4">
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="text-center py-3 border-top">
+  <small>&copy; 2025 TimesheetApp</small>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% block body_extra %}{% endblock %}
+</body>
+</html>

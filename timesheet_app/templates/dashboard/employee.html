@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="d-flex" id="wrapper">
+    <!-- Sidebar -->
+    <div class="border-end bg-light" id="sidebar-wrapper">
+        <div class="sidebar-heading fw-bold text-primary px-3 mt-3">TimesheetApp</div>
+        <div class="list-group list-group-flush">
+            <a href="{% url 'add_time_entry' %}" class="list-group-item list-group-item-action">⏱ Add Timer</a>
+            <a href="{% url 'my_timesheet' %}" class="list-group-item list-group-item-action">📅 My Timesheet</a>
+            <a href="{% url 'my_reports' %}" class="list-group-item list-group-item-action">📊 Reports</a>
+            <a href="#" class="list-group-item list-group-item-action">📂 Projects</a>
+            <a href="#" class="list-group-item list-group-item-action">👥 Team</a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="page-content-wrapper" class="w-100">
+        <div class="container-fluid p-4">
+            <h3 class="fw-bold mb-4">👩‍💼 Employee Dashboard</h3>
+
+            <!-- Time Tracking Box -->
+            <div class="card shadow-sm p-3 mb-4">
+                <div class="d-flex align-items-center flex-wrap">
+                    <input type="text" id="taskDescription" class="form-control me-2 mb-2" placeholder="What are you working on?">
+                    <select class="form-select me-2 mb-2" style="max-width:200px;">
+                        <option>+ Project</option>
+                        {% for project in projects %}
+                            <option>{{ project.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="text" id="timer" class="form-control text-center fw-bold me-2 mb-2" value="00:00:00" readonly style="max-width:150px;">
+                    <button id="startStopBtn" class="btn btn-primary mb-2">START</button>
+                </div>
+            </div>
+
+            <!-- Weekly Summary -->
+            <div class="card shadow-sm p-3 mb-4">
+                <h5 class="fw-bold mb-3">📅 This Week Summary ({{ week_start }} - {{ week_end }})</h5>
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Description</th>
+                            <th>Project</th>
+                            <th>Date</th>
+                            <th>Time Logged</th>
+                        </tr>
+                    </thead>
+                    <tbody id="timeEntries">
+                        {% for entry in entries %}
+                        <tr>
+                            <td>{{ entry.notes|default:"No description" }}</td>
+                            <td>{{ entry.project.name }}</td>
+                            <td>{{ entry.work_date }}</td>
+                            <td>{{ entry.duration_minutes|divisibleby:60 }} hrs</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4">No entries yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div class="fw-bold text-end">Week Total: <span id="weekTotal">{{ total_hours }} hrs</span></div>
+                <div class="mt-2 text-end">
+                    <span class="badge 
+                        {% if week_status == 'approved' %} bg-success
+                        {% elif week_status == 'submitted' %} bg-warning
+                        {% elif week_status == 'rejected' %} bg-danger
+                        {% else %} bg-secondary {% endif %}">
+                        {{ week_status|capfirst }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom JS -->
+<script>
+let timerInterval;
+let seconds = 0;
+let running = false;
+
+function formatTime(secs) {
+    const h = String(Math.floor(secs / 3600)).padStart(2, '0');
+    const m = String(Math.floor((secs % 3600) / 60)).padStart(2, '0');
+    const s = String(secs % 60).padStart(2, '0');
+    return `${h}:${m}:${s}`;
+}
+
+document.getElementById("startStopBtn").addEventListener("click", function() {
+    const btn = this;
+    if (!running) {
+        running = true;
+        btn.textContent = "STOP";
+        btn.classList.replace("btn-primary", "btn-danger");
+        timerInterval = setInterval(() => {
+            seconds++;
+            document.getElementById("timer").value = formatTime(seconds);
+        }, 1000);
+    } else {
+        running = false;
+        clearInterval(timerInterval);
+        btn.textContent = "START";
+        btn.classList.replace("btn-danger", "btn-primary");
+
+        // Save entry dynamically (frontend only for now)
+        const desc = document.getElementById("taskDescription").value || "No description";
+        const project = document.querySelector("select").value;
+        const date = new Date().toLocaleDateString();
+        const timeLogged = formatTime(seconds);
+
+        const row = `<tr>
+                        <td>${desc}</td>
+                        <td>${project}</td>
+                        <td>${date}</td>
+                        <td>${timeLogged}</td>
+                    </tr>`;
+        document.getElementById("timeEntries").insertAdjacentHTML("beforeend", row);
+
+        // Update weekly total
+        const currentTotal = document.getElementById("weekTotal").textContent.split(":").map(Number);
+        const totalSecs = (currentTotal[0] * 3600 + currentTotal[1] * 60 + (currentTotal[2] || 0)) + seconds;
+        document.getElementById("weekTotal").textContent = formatTime(totalSecs);
+
+        // Reset timer
+        seconds = 0;
+        document.getElementById("timer").value = "00:00:00";
+    }
+});
+</script>
+
+<style>
+/* Sidebar styling */
+#sidebar-wrapper {
+    width: 220px;
+    min-height: 100vh;
+}
+#page-content-wrapper {
+    flex-grow: 1;
+}
+
+/* Attractive hover for sidebar */
+.list-group-item {
+    transition: background 0.3s ease;
+}
+.list-group-item:hover {
+    background: #e9f2ff;
+    font-weight: bold;
+}
+</style>
+{% endblock %}
+{% if messages %}
+  <ul class="messages">
+    {% for message in messages %}
+      <li class="{{ message.tags }}">{{ message }}</li>
+    {% endfor %}
+  </ul>
+{% endif %}

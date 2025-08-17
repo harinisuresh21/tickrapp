@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+{% load widget_tweaks %}
+
+<div class="container mt-5">
+    <h3 class="fw-bold text-center mb-4">📝 Add / Edit Time Entry</h3>
+
+    <div class="card shadow-lg border-0 rounded-4 p-4 animate__animated animate__fadeInUp">
+        <!-- Django messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} shadow-sm rounded-3 mb-3">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Form errors -->
+        {% if form.errors %}
+            <div class="alert alert-danger shadow-sm rounded-3 mb-3">
+                <ul class="mb-0">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        <li><strong>{{ field|capfirst }}:</strong> {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        <form id="timeEntryForm" method="POST" novalidate class="needs-validation">
+            <style>
+                .heading{
+                    font-size: 1.2em;
+                    font-weight: 300;
+                    font-family: 'Arial', sans-serif;
+                    color: #333;
+                    padding-top: 10px;
+                    padding-right: 10px;
+                    
+                }
+            </style>
+            {% csrf_token %}
+
+            <!-- Project -->
+            <div class="heading">
+                <label for="id_project" class="heading">Project (Optional)</label>
+                {{ form.project|add_class:"form-select shadow-sm" }}
+            </div>
+
+            <!-- Work Date -->
+            <div class="mb-3">
+                <label for="id_work_date" class="heading">Work Date</label>
+                {{ form.work_date|add_class:"form-control shadow-sm" }}
+            </div>
+
+            <!-- Start & End Time -->
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="id_start_time" class="heading">Start Time</label>
+                    {{ form.start_time|add_class:"form-control shadow-sm" }}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="id_end_time" class="heading">End Time</label>
+                    {{ form.end_time|add_class:"form-control shadow-sm" }}
+                </div>
+            </div>
+
+            <!-- Break Minutes -->
+            <div class="mb-3">
+                <label for="id_break_minutes" class="heading">Break (minutes)</label>
+                {{ form.break_minutes|add_class:"form-control shadow-sm" }}
+            </div>
+
+            <!-- Billable -->
+            <div class="mb-3">
+                <label class="heading">Billable</label>
+                {{ form.billable }}
+            </div>
+               
+
+            <!-- Notes -->
+            <div class="mb-3">
+                <label for="id_notes" class="heading">Notes</label>
+                {{ form.notes|add_class:"form-control shadow-sm" }}
+            </div>
+
+            <!-- Submit -->
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{% url 'employee_dashboard' %}" class="btn btn-outline-secondary px-4 py-2 rounded-3 shadow-sm hover-scale">⬅ Back</a>
+                <button type="submit" class="btn btn-primary px-4 py-2 rounded-3 shadow-sm hover-scale">💾 Save Entry</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Extra Styling -->
+<style>
+    .hover-scale {
+        transition: all 0.2s ease-in-out;
+    }
+    .hover-scale:hover {
+        transform: scale(1.05);
+    }
+    .card {
+        transition: all 0.3s ease-in-out;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+    }
+</style>
+
+<!-- JS Validation -->
+<script>
+document.getElementById("timeEntryForm").addEventListener("submit", function(e) {
+    const start = document.getElementById("id_start_time").value;
+    const end = document.getElementById("id_end_time").value;
+    const breakMin = parseInt(document.getElementById("id_break_minutes").value || 0);
+
+    if (!start || !end) {
+        alert("⏰ Please enter both Start and End time.");
+        e.preventDefault();
+        return;
+    }
+
+    const startDate = new Date(`1970-01-01T${start}:00`);
+    const endDate = new Date(`1970-01-01T${end}:00`);
+    const diff = (endDate - startDate) / (1000 * 60); // minutes
+
+    if (diff <= 0) {
+        alert("⚠️ End Time must be after Start Time.");
+        e.preventDefault();
+        return;
+    }
+
+    if (diff - breakMin <= 0) {
+        alert("⚠️ Duration must be positive after subtracting break.");
+        e.preventDefault();
+        return;
+    }
+});
+</script>
+{% endblock %}

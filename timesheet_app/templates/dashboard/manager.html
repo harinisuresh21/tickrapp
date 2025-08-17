@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Manager Dashboard | TimesheetApp{% endblock %}
+
+{% block content %}
+<h3 class="mb-3">Manager Dashboard</h3>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card card-kpi shadow-sm">
+      <div class="card-body">
+        <h6 class="text-muted mb-1">Approved This Month</h6>
+        <div class="display-6 fw-bold">{{ approved_this_month }}</div>
+        <small class="text-muted">as of {{ today }}</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-8 d-flex justify-content-end align-items-start gap-2">
+    <a href="#" class="btn btn-outline-primary">Reports</a>
+    <a href="#" class="btn btn-outline-secondary">Projects</a>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header fw-semibold">Pending Approvals</div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+      <tr>
+        <th>Employee</th>
+        <th>Week Start</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+      </thead>
+      <tbody>
+      {% for w in pending_weeks %}
+        <tr>
+          <td>{{ w.user.username }}</td>
+          <td>{{ w.week_start }}</td>
+          <td><span class="badge bg-warning text-dark">{{ w.status|title }}</span></td>
+          <td>
+            <a href="#" class="btn btn-sm btn-success">Approve</a>
+            <a href="#" class="btn btn-sm btn-danger">Reject</a>
+            <a href="#" class="btn btn-sm btn-outline-primary">View</a>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4" class="text-center text-muted py-4">No submissions waiting.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

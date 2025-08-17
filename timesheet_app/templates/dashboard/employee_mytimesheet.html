@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="container mt-5">
+    <h2 class="fw-bold text-center mb-4">🗓 My Weekly Timesheet</h2>
+
+    <!-- Display messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} shadow-sm rounded-3 mb-3">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Timesheet Table -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover shadow-sm">
+            <thead class="table-light">
+                <tr>
+                    <th>Date</th>
+                    <th>Project</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th>Break (min)</th>
+                    <th>Total Hours</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                    <tr>
+                        <td>{{ entry.work_date }}</td>
+                        <td>{{ entry.project }}</td>
+                        <td>{{ entry.start_time|time:"H:i" }}</td>
+                        <td>{{ entry.end_time|time:"H:i" }}</td>
+                        <td>{{ entry.break_minutes }}</td>
+                        <td>{{ entry.duration_minutes|divisibleby:60|floatformat:2 }}</td>
+                        <td>{{ entry.notes }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center">No time entries yet for this week.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="table-secondary">
+                    <th colspan="5" class="text-end">Total Hours:</th>
+                    <th colspan="2">
+                        {{ total_hours }}
+                    </th>
+                </tr>
+                <tr class="table-secondary">
+                    <th colspan="5" class="text-end">Week Status:</th>
+                    <th colspan="2">
+                        {{ week_status|capfirst }}
+                    </th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <div class="mt-4 d-flex justify-content-between">
+        <a href="{% url 'employee_dashboard' %}" class="btn btn-outline-secondary px-4 py-2 rounded-3 shadow-sm hover-scale">⬅ Back</a>
+        <a href="{% url 'add_time_entry' %}" class="btn btn-primary px-4 py-2 rounded-3 shadow-sm hover-scale">➕ Add Entry</a>
+    </div>
+</div>
+
+<!-- Extra Styling -->
+<style>
+.hover-scale { transition: all 0.2s ease-in-out; }
+.hover-scale:hover { transform: scale(1.05); }
+.table-hover tbody tr:hover { background-color: #f2f2f2; }
+</style>
+{% endblock %}

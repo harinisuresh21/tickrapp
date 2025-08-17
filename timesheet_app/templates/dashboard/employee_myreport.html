@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="fw-bold text-center mb-4">📊 My Recent Reports</h2>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} shadow-sm rounded-3 mb-3">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Filter & Export -->
+    <div class="mb-3 d-flex justify-content-between align-items-center">
+        <form method="get" class="d-flex gap-2">
+            <input type="date" name="start_date" value="{{ start_date }}" class="form-control">
+            <input type="date" name="end_date" value="{{ end_date }}" class="form-control">
+            <button type="submit" class="btn btn-primary">Filter</button>
+        </form>
+        <a href="?{% if start_date %}start_date={{ start_date }}&{% endif %}{% if end_date %}end_date={{ end_date }}&{% endif %}export=csv"
+           class="btn btn-success">⬇ Export CSV</a>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover shadow-sm">
+            <thead class="table-light">
+                <tr>
+                    <th>Date</th>
+                    <th>Project</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th>Break (min)</th>
+                    <th>Total Hours</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                    <tr>
+                        <td>{{ entry.work_date }}</td>
+                        <td>{{ entry.project.name }}</td>
+                        <td>{{ entry.start_time|time:"H:i" }}</td>
+                        <td>{{ entry.end_time|time:"H:i" }}</td>
+                        <td>{{ entry.break_minutes }}</td>
+                        <td>{{ entry.hours }}</td>
+                        <td>{{ entry.notes }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center">No time entries found.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="table-secondary">
+                    <th colspan="5" class="text-end">Total Hours:</th>
+                    <th colspan="2">{{ total_hours }}</th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <!-- Navigation -->
+    <div class="mt-4">
+        <a href="{% url 'employee_dashboard' %}" class="btn btn-outline-secondary px-4 py-2 rounded-3 shadow-sm hover-scale">⬅ Back</a>
+        <a href="{% url 'add_time_entry' %}" class="btn btn-primary px-4 py-2 rounded-3 shadow-sm hover-scale">➕ Add Entry</a>
+    </div>
+
+    <!-- Chart -->
+    <div class="card shadow-sm p-3 mt-5 mb-4">
+        <h4 class="fw-bold mb-3">📊 Hours per Project</h4>
+        <canvas id="hoursChart" style="height: 300px;"></canvas>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx = document.getElementById('hoursChart').getContext('2d');
+const hoursChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: {{ chart_labels|safe }},
+        datasets: [{
+            label: 'Total Hours',
+            data: {{ chart_data|safe }},
+            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: false },
+            tooltip: { enabled: true }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: { display: true, text: 'Hours' }
+            },
+            x: {
+                title: { display: true, text: 'Project' }
+            }
+        }
+    }
+});
+</script>
+
+<style>
+.hover-scale { transition: all 0.2s ease-in-out; }
+.hover-scale:hover { transform: scale(1.05); }
+.table-hover tbody tr:hover { background-color: #f2f2f2; }
+</style>
+{% endblock %}
