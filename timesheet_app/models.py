@@ -56,9 +56,10 @@ class TimesheetEntry(models.Model):
     """Individual timesheet entry for an employee"""
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.PROTECT, null=True, blank=True)
-    work_date = models.DateField()
-    start_time = models.TimeField()
-    end_time = models.TimeField()
+    work_date = models.DateField(null=False, blank=False)
+    # start_time should be set explicitly (either by the timer or the form)
+    start_time = models.DateTimeField(null=True, blank=True)
+    end_time = models.DateTimeField(null=True, blank=True)
     break_minutes = models.PositiveIntegerField(default=0)
     duration_minutes = models.PositiveIntegerField(default=0, editable=False)
     billable = models.BooleanField(default=True)
@@ -75,12 +76,13 @@ class TimesheetEntry(models.Model):
 
     def clean(self):
         """Validate timesheet logic"""
-        # Skip validation if required fields are missing
-        if not self.user or not self.work_date or not self.start_time or not self.end_time:
+        # Skip validation if required fields are missing. Use user_id to avoid RelatedObjectDoesNotExist
+        if not getattr(self, 'user_id', None) or not self.work_date or not self.start_time or not self.end_time:
             return
 
-        start_dt = datetime.combine(self.work_date, self.start_time)
-        end_dt = datetime.combine(self.work_date, self.end_time)
+        # start_time and end_time may already be datetimes; ensure we have proper datetimes
+        start_dt = self.start_time if isinstance(self.start_time, datetime) else datetime.combine(self.work_date, self.start_time)
+        end_dt = self.end_time if isinstance(self.end_time, datetime) else datetime.combine(self.work_date, self.end_time)
 
         if end_dt <= start_dt:
             raise ValidationError("End time must be after start time.")

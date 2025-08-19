@@ -5,14 +5,20 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.views import LoginView
 from django.contrib import messages
 from django.db.models import Sum
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.http import HttpResponse
+from collections import defaultdict
 import csv
+import datetime as dt
+import calendar
 
 from .models import TimesheetEntry, Project, WeekSummary, STATUS_DRAFT, STATUS_SUBMITTED, STATUS_APPROVED
 from .forms import SignUpForm, TimesheetEntryForm
 from .decorators import role_required
 from .utils import get_current_week_bounds
+from django.template.loader import render_to_string
+from django.http import JsonResponse, HttpResponseBadRequest
 
 User = get_user_model()
 
@@ -26,15 +32,14 @@ def signup_view(request):
         form = SignUpForm(request.POST)
         if form.is_valid():
             user = form.save()
-            role = form.cleaned_data["role"]
-            group_name = "Manager" if role == "manager" else "Employee"
+            role = form.cleaned_data.get("role", "employee")
+            group_name = "Manager" if role.lower() == "manager" else "Employee"
             group, _ = Group.objects.get_or_create(name=group_name)
             user.groups.add(group)
             login(request, user)
             messages.success(request, "Account created successfully.")
             return redirect("post_login_redirect")
-        else:
-            messages.error(request, "Please correct the errors below.")
+        messages.error(request, "Please correct the errors below.")
     else:
         form = SignUpForm()
     return render(request, "registration/signup.html", {"form": form})
@@ -44,41 +49,193 @@ class CustomLoginView(LoginView):
     template_name = "registration/login.html"
 
 
-# ------------------- After Login -------------------
+# ------------------- Post Login Redirect -------------------
 @login_required
 def post_login_redirect(request):
-    role = getattr(request.user, "role", "employee")
-    if role == "manager":
+    if request.user.groups.filter(name="Manager").exists():
         return redirect("manager_dashboard")
     return redirect("employee_dashboard")
 
 
-# ------------------- Employee Dashboard -------------------
-@role_required("employee")
+# ---------------- Employee Dashboard ----------------
 @login_required
+@role_required("employee")
 def employee_dashboard(request):
-    week_start, week_end = get_current_week_bounds()
-    entries = TimesheetEntry.objects.select_related("project")\
-        .filter(user=request.user, work_date__range=(week_start, week_end))\
-        .order_by("work_date", "start_time")
+    user = request.user
+    today = dt.date.today()
 
-    total_minutes = entries.aggregate(total_minutes=Sum("duration_minutes"))["total_minutes"] or 0
-    total_hours = round(total_minutes / 60.0, 2)
+    # Projects for timer
+    projects = Project.objects.filter(active=True).order_by("name")
 
-    week_summary, _ = WeekSummary.objects.get_or_create(
-        user=request.user,
-        week_start=week_start,
-        defaults={"status": STATUS_DRAFT},
-    )
+    # Active Timer (exposed to template as 'running_timer')
+    running_timer = TimesheetEntry.objects.filter(user=user, end_time__isnull=True).order_by("-start_time").first()
+    if running_timer and running_timer.start_time:
+        delta = timezone.now() - running_timer.start_time
+        running_timer.hours = round(delta.total_seconds() / 3600, 2)
+    else:
+        running_timer = None
+
+    # Recent Entries (last 5)
+    recent_entries = TimesheetEntry.objects.filter(user=user).order_by("-work_date", "-start_time")[:5]
+    for e in recent_entries:
+        if e.duration_minutes is not None:
+            e.hours = round(e.duration_minutes / 60.0, 2)
+        elif e.start_time:
+            delta = timezone.now() - e.start_time
+            e.hours = round(delta.total_seconds() / 3600, 2)
+        else:
+            e.hours = 0
+
+    # Git-style Year Contribution
+    year_start = dt.date(today.year, 1, 1)
+    year_end = dt.date(today.year, 12, 31)
+    entries_qs = TimesheetEntry.objects.filter(
+        user=user, work_date__range=(year_start, year_end)
+    ).values("work_date").annotate(total_minutes=Coalesce(Sum("duration_minutes"), 0))
+
+    hours_map = {e["work_date"]: e["total_minutes"] / 60 for e in entries_qs}
+
+    cal_data = []
+    week = []
+    current_date = year_start
+    while current_date <= year_end:
+        if current_date.weekday() == 6 and week:
+            cal_data.append(week)
+            week = []
+        week.append({"date": current_date, "hours": hours_map.get(current_date, 0)})
+        current_date += dt.timedelta(days=1)
+    if week:
+        cal_data.append(week)
+
+    # Month labels with precomputed margin
+    month_labels = []
+    # Each week column consumes ~22px (16px block + gaps); calculate margins accordingly
+    week_column_width = 22
+    for month in range(1, 13):
+        first_day = dt.date(today.year, month, 1)
+        week_index = (first_day - year_start).days // 7
+        margin_px = week_index * week_column_width
+        month_labels.append({"name": calendar.month_abbr[month], "margin": margin_px})
 
     context = {
-        "week_start": week_start,
-        "week_end": week_end,
-        "entries": entries,
-        "total_hours": total_hours,
-        "week_status": week_summary.status,
+        "projects": projects,
+        "running_timer": running_timer,
+        "recent_entries": recent_entries,
+        "cal_data": cal_data,
+        "month_labels": month_labels,
     }
+
     return render(request, "dashboard/employee.html", context)
+
+
+# ---------------- Start Timer ----------------
+@login_required
+def start_time_entry(request):
+    user = request.user
+    today = timezone.localdate()
+    # Prevent overlapping timers
+    overlapping = TimesheetEntry.objects.filter(
+        user=user,
+        end_time__isnull=True,
+    ).exists()
+
+    if overlapping:
+        messages.warning(request, "You already have a running timer!", extra_tags='dashboard')
+        # If XHR request, return JSON so front-end can update without redirect
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({"error": "running"}, status=400)
+        return redirect("employee_dashboard")
+
+    if request.method == "POST":
+        project_id = request.POST.get("project")
+        notes = request.POST.get("notes", "")
+        project = Project.objects.filter(id=project_id).first() if project_id else None
+
+        # Check if overlapping with today entries
+        overlapping_today = TimesheetEntry.objects.filter(
+            user=user,
+            work_date=today,
+            start_time__lte=timezone.now(),
+            end_time__gte=timezone.now(),
+        ).exists()
+
+        if overlapping_today:
+            messages.error(request, "Cannot start timer: overlapping entry exists today.", extra_tags='dashboard')
+            return redirect("employee_dashboard")
+
+        TimesheetEntry.objects.create(
+            user=user,
+            project=project,
+            start_time=timezone.now(),
+            work_date=today,
+            notes=notes,
+            duration_minutes=0,
+        )
+
+        messages.success(request, "Timer started successfully!", extra_tags='dashboard')
+
+        # If AJAX request, return updated fragments
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            recent_entries = TimesheetEntry.objects.filter(user=user).order_by("-work_date", "-start_time")[:5]
+            for e in recent_entries:
+                if e.duration_minutes is not None:
+                    e.hours = round(e.duration_minutes / 60.0, 2)
+                elif e.start_time:
+                    delta = timezone.now() - e.start_time
+                    e.hours = round(delta.total_seconds() / 3600, 2)
+                else:
+                    e.hours = 0
+
+            running_timer = TimesheetEntry.objects.filter(user=user, end_time__isnull=True).order_by("-start_time").first()
+            if running_timer and running_timer.start_time:
+                delta = timezone.now() - running_timer.start_time
+                running_timer.hours = round(delta.total_seconds() / 3600, 2)
+
+            recent_html = render_to_string("dashboard/_recent_entries.html", {"recent_entries": recent_entries}, request=request)
+            running_html = render_to_string("dashboard/_running_timer.html", {"running_timer": running_timer, "projects": Project.objects.filter(active=True)}, request=request)
+            return JsonResponse({"recent_html": recent_html, "running_html": running_html})
+
+    return redirect("employee_dashboard")
+
+
+# ---------------- Stop Timer ----------------
+@login_required
+def stop_time_entry(request, entry_id):
+    user = request.user
+    entry = get_object_or_404(TimesheetEntry, id=entry_id, user=user)
+    if entry.end_time:
+        messages.warning(request, "This timer is already stopped!", extra_tags='dashboard')
+        return redirect("employee_dashboard")
+
+    entry.end_time = timezone.now()
+    delta = entry.end_time - entry.start_time
+    entry.duration_minutes = int(delta.total_seconds() / 60)
+    entry.hours = round(delta.total_seconds() / 3600, 2)
+    entry.save()
+    messages.success(request, f"Timer stopped! Total hours: {entry.hours}", extra_tags='dashboard')
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        # Return updated fragments
+        recent_entries = TimesheetEntry.objects.filter(user=user).order_by("-work_date", "-start_time")[:5]
+        for e in recent_entries:
+            if e.duration_minutes is not None:
+                e.hours = round(e.duration_minutes / 60.0, 2)
+            elif e.start_time and e.end_time:
+                delta = e.end_time - e.start_time
+                e.hours = round(delta.total_seconds() / 3600, 2)
+            else:
+                e.hours = 0
+
+        running_timer = TimesheetEntry.objects.filter(user=user, end_time__isnull=True).order_by("-start_time").first()
+        if running_timer and running_timer.start_time:
+            delta = timezone.now() - running_timer.start_time
+            running_timer.hours = round(delta.total_seconds() / 3600, 2)
+
+        recent_html = render_to_string("dashboard/_recent_entries.html", {"recent_entries": recent_entries}, request=request)
+        running_html = render_to_string("dashboard/_running_timer.html", {"running_timer": running_timer, "projects": Project.objects.filter(active=True)}, request=request)
+        return JsonResponse({"recent_html": recent_html, "running_html": running_html})
+
+    return redirect("employee_dashboard")
 
 
 # ------------------- Manager Dashboard -------------------
@@ -88,7 +245,6 @@ def manager_dashboard(request):
     pending_weeks = WeekSummary.objects.select_related("user")\
         .filter(status=STATUS_SUBMITTED)\
         .order_by("week_start")
-
     today = timezone.localdate()
     month_start = today.replace(day=1)
     approved_this_month = WeekSummary.objects.filter(
@@ -104,36 +260,55 @@ def manager_dashboard(request):
     return render(request, "dashboard/manager.html", context)
 
 
-# ------------------- Add/Edit Time Entry -------------------
+# ------------------- Add / Edit Time Entry -------------------
 @role_required("employee")
 @login_required
 def add_edit_entry(request, entry_id=None):
-    entry = None
-    if entry_id:
-        entry = get_object_or_404(TimesheetEntry, pk=entry_id, user=request.user)
-
+    entry = get_object_or_404(TimesheetEntry, pk=entry_id, user=request.user) if entry_id else None
     if request.method == "POST":
         form = TimesheetEntryForm(request.POST, instance=entry, user=request.user)
         if form.is_valid():
             obj = form.save(commit=False)
             obj.user = request.user
+            # Compose start_time and end_time from date + time fields if provided
+            start_time_field = form.cleaned_data.get('start_time_time')
+            end_time_field = form.cleaned_data.get('end_time_time')
+            if start_time_field:
+                obj.start_time = timezone.make_aware(dt.datetime.combine(obj.work_date, start_time_field))
+            if end_time_field:
+                obj.end_time = timezone.make_aware(dt.datetime.combine(obj.work_date, end_time_field))
+            if obj.start_time and obj.end_time:
+                delta = obj.end_time - obj.start_time
+                obj.duration_minutes = int(delta.total_seconds() / 60)
             obj.save()
             messages.success(request, "✅ Time entry saved successfully.")
             return redirect("employee_dashboard")
-        else:
-            messages.error(request, "⚠️ Please correct the errors below.")
+        messages.error(request, "⚠️ Please correct the errors below.")
     else:
         form = TimesheetEntryForm(instance=entry, user=request.user)
 
     projects = Project.objects.filter(active=True)
+    projects_available = projects.exists() or (entry and entry.project is not None)
     return render(request, "dashboard/employee_timeentry.html", {
         "form": form,
         "projects": projects,
+        "projects_available": projects_available,
         "entry": entry,
     })
 
 
-# ------------------- My Timesheet (Weekly) -------------------
+@login_required
+@role_required("employee")
+def delete_entry(request, entry_id):
+    entry = get_object_or_404(TimesheetEntry, pk=entry_id, user=request.user)
+    if request.method == 'POST':
+        entry.delete()
+        messages.success(request, "Entry deleted.")
+        return redirect('employee_dashboard')
+    return render(request, 'dashboard/confirm_delete.html', {'entry': entry})
+
+
+# ------------------- My Timesheet -------------------
 @role_required("employee")
 @login_required
 def my_timesheet(request):
@@ -144,12 +319,20 @@ def my_timesheet(request):
     ).order_by("work_date", "start_time")
 
     week_summary, _ = WeekSummary.objects.get_or_create(
-        user=request.user,
-        week_start=week_start,
-        defaults={"status": STATUS_DRAFT},
+        user=request.user, week_start=week_start, defaults={"status": STATUS_DRAFT}
     )
 
-    total_minutes = entries.aggregate(total_minutes=Sum("duration_minutes"))["total_minutes"] or 0
+    # Compute per-entry hours for template display (hours as float)
+    for e in entries:
+        if e.duration_minutes is not None:
+            e.hours = round(e.duration_minutes / 60.0, 2)
+        elif e.start_time and e.end_time:
+            delta = e.end_time - e.start_time
+            e.hours = round(delta.total_seconds() / 3600, 2)
+        else:
+            e.hours = 0
+
+    total_minutes = entries.aggregate(total_minutes=Coalesce(Sum("duration_minutes"), 0))["total_minutes"]
     total_hours = round(total_minutes / 60.0, 2)
 
     context = {
@@ -162,61 +345,119 @@ def my_timesheet(request):
     return render(request, "dashboard/employee_mytimesheet.html", context)
 
 
-# ------------------- My Reports -------------------
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
-from django.db.models import Sum
-import csv
-from .models import TimesheetEntry
-from .decorators import role_required
-
+# ------------------- Reports -------------------
 @role_required("employee")
 @login_required
 def my_reports(request):
-    """View latest timesheet entries with optional date filter, CSV download, and dynamic chart data"""
-    entries = TimesheetEntry.objects.filter(user=request.user).order_by("-work_date")
+    user = request.user
+    projects = Project.objects.all().order_by("name")
 
-    # ---------------- Date filter ----------------
     start_date = request.GET.get("start_date")
     end_date = request.GET.get("end_date")
-    if start_date and end_date:
-        entries = entries.filter(work_date__range=[start_date, end_date])
+    project_id = request.GET.get("project")
 
-    entries = entries[:20]  # limit to latest 20 by default
+    today = dt.date.today()
+    def _parse_query_date(s, default):
+        if not s:
+            return default
+        # Normalize common query formats (remove dots from abbreviated months like 'Aug.')
+        s_clean = s.replace('.', '').strip()
+        # Try a few common formats
+        formats = [
+            "%Y-%m-%d",
+            "%B %d, %Y",  # July 20, 2025
+            "%b %d, %Y",  # Jul 20, 2025 or Aug 19, 2025
+            "%m/%d/%Y",   # 07/20/2025
+            "%d-%m-%Y",
+        ]
+        for fmt in formats:
+            try:
+                return dt.datetime.strptime(s_clean, fmt).date()
+            except Exception:
+                continue
+        # Try ISO parse as last resort
+        try:
+            return dt.date.fromisoformat(s_clean)
+        except Exception:
+            # Fall back to default and warn the user instead of raising an exception
+            messages.warning(request, f"Could not parse date '{s}'; using default range.")
+            return default
 
-    # ---------------- Calculate total hours ----------------
-    total_minutes = entries.aggregate(total_minutes=Sum("duration_minutes"))["total_minutes"] or 0
-    total_hours = round(total_minutes / 60.0, 2)
+    start_date = _parse_query_date(start_date, today - dt.timedelta(days=30))
+    end_date = _parse_query_date(end_date, today)
 
-    # ---------------- CSV Export ----------------
-    if request.GET.get("export") == "csv":
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="timesheet_report.csv"'
-        writer = csv.writer(response)
-        writer.writerow(['Date', 'Project', 'Start Time', 'End Time', 'Break (min)', 'Duration (hrs)', 'Notes'])
-        for entry in entries:
-            duration_hours = round(entry.duration_minutes / 60.0, 2)
-            writer.writerow([entry.work_date, entry.project.name, entry.start_time, entry.end_time,
-                             entry.break_minutes, duration_hours, entry.notes])
+    entries_qs = TimesheetEntry.objects.filter(
+        user=user,
+        work_date__range=(start_date, end_date)
+    ).order_by("work_date", "start_time")
+
+    if project_id:
+        try:
+            entries_qs = entries_qs.filter(project_id=int(project_id))
+        except ValueError:
+            pass
+
+    entries = []
+    for e in entries_qs:
+        if e.duration_minutes is not None:
+            e.hours = round(e.duration_minutes / 60.0, 2)
+        else:
+            e.hours = 0
+        entries.append(e)
+
+    # Summary
+    summary_dict = defaultdict(float)
+    for e in entries:
+        name = e.project.name if e.project else "Unassigned"
+        summary_dict[name] += e.hours
+    summary_rows = [{"name": k, "hours": round(v, 2)} for k, v in summary_dict.items()]
+
+    # Chart data
+    chart_dict = defaultdict(float)
+    for e in entries:
+        chart_dict[e.work_date.strftime("%d-%m-%Y")] += e.hours
+    chart_labels = list(chart_dict.keys())
+    chart_data = [chart_dict[d] for d in chart_labels]
+
+    # CSV Export
+    export = request.GET.get("export", "").lower()
+    if export in {"summary", "details"}:
+        # Use explicit UTF-8 charset and BOM so Excel opens files correctly on Windows.
+        filename = f"timesheet_{export}.csv"
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        # Write UTF-8 BOM
+        response.write('\ufeff')
+        # Use lineterminator to avoid extra blank lines on some platforms
+        writer = csv.writer(response, lineterminator='\n')
+
+        if export == "summary":
+            writer.writerow(["Project", "Total Hours"])
+            for row in summary_rows:
+                name = row.get("name", "")
+                hours = row.get("hours", 0)
+                writer.writerow([str(name), f"{float(hours):.2f}"])
+        else:
+            writer.writerow(["Date", "Project", "Start", "End", "Break (min)", "Hours", "Notes"])
+            for e in entries:
+                date_str = e.work_date.strftime("%d-%m-%Y") if getattr(e, 'work_date', None) else ""
+                project_name = e.project.name if getattr(e, 'project', None) else "Unassigned"
+                start_str = e.start_time.strftime("%H:%M") if getattr(e, 'start_time', None) else ""
+                end_str = e.end_time.strftime("%H:%M") if getattr(e, 'end_time', None) else ""
+                break_min = getattr(e, 'break_minutes', 0) or 0
+                hours_val = getattr(e, 'hours', 0) or 0
+                notes = getattr(e, 'notes', '') or ''
+                writer.writerow([date_str, project_name, start_str, end_str, str(break_min), f"{float(hours_val):.2f}", notes])
         return response
-
-    # ---------------- Prepare chart data ----------------
-    # Hours per project from filtered entries
-    project_data = entries.values('project__name').annotate(hours=Sum('duration_minutes'))
-    chart_labels = [item['project__name'] for item in project_data]
-    chart_data = [round(item['hours'] / 60.0, 2) for item in project_data]
-
-    # Add computed hours field for template
-    for entry in entries:
-        entry.hours = round(entry.duration_minutes / 60.0, 2)
 
     context = {
         "entries": entries,
-        "total_hours": total_hours,
-        "start_date": start_date,
-        "end_date": end_date,
+        "projects": projects,
+        "summary_rows": summary_rows,
         "chart_labels": chart_labels,
         "chart_data": chart_data,
+        "start_date": start_date,
+        "end_date": end_date,
+        "selected_project": int(project_id) if project_id else None,
     }
     return render(request, "dashboard/employee_myreport.html", context)

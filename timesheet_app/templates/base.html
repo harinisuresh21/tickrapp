@@ -6,46 +6,82 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}TimesheetApp{% endblock %}</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
-    .brand { font-weight: 800; letter-spacing: .5px; }
-    .nav-link.active { font-weight: 600; }
-    .card-kpi { border-left: 4px solid #4e73df; }
+    :root{
+      --primary:#0d6efd;
+      --muted:#6c757d;
+      --card:#ffffff;
+      --bg:#f4f6f9;
+      --accent:#7c3aed;
+    }
+    body { display: flex; min-height: 100vh; flex-direction: column; }
+    main { flex: 1; }
+    .sidebar { width: 220px; background: linear-gradient(180deg,#23272b, #2b3136); color: #fff; min-height: 100vh; padding: 24px; }
+    .sidebar a { display: block; color: #cfe2ff; margin: 12px 0; text-decoration: none; padding: 8px 10px; border-radius: 8px; }
+    .sidebar a:hover { background: rgba(255,255,255,0.03); color: #fff; text-decoration: none; }
+    .content-wrapper { flex: 1; padding: 28px; background: var(--bg); min-height: 100vh; }
+    .contribution-graph { display: grid; grid-template-columns: repeat(7, 18px); gap: 4px; }
+    .day { width: 18px; height: 18px; border-radius: 4px; cursor: pointer; transition: transform 0.12s; }
+    .day:hover { transform: scale(1.15); }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px; }
+    .app-brand { font-weight:700; letter-spacing:0.3px; display:flex; align-items:center; gap:10px; }
+    .profile-pill { display:flex; align-items:center; gap:10px; background:var(--card); padding:6px 10px; border-radius:999px; box-shadow:0 3px 8px rgba(12,12,12,0.06); }
+    .profile-pill img { width:36px; height:36px; border-radius:50%; object-fit:cover; }
+    .card-modern { background: linear-gradient(180deg, #fff, #fbfdff); border-radius:12px; padding:18px; box-shadow: 0 6px 20px rgba(20,20,50,0.06); }
   </style>
   {% block head_extra %}{% endblock %}
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<nav class="navbar navbar-expand-lg navbar-light" style="background: linear-gradient(90deg, rgba(255,255,255,0.7), rgba(250,250,255,0.6)); border-bottom:1px solid rgba(0,0,0,0.04);">
   <div class="container">
-    <a class="navbar-brand brand" href="{% url 'home' %}">TimesheetApp</a>
-    <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="nav">
-      <ul class="navbar-nav ms-auto">
-        {% if user.is_authenticated %}
-          {% if user.role == 'manager' %}
-            <li class="nav-item"><a class="nav-link" href="{% url 'manager_dashboard' %}">Manager Dashboard</a></li>
+    <div class="app-brand">
+      <i class="fa-solid fa-clock fa-lg" style="color:var(--accent)"></i>
+      <a class="navbar-brand" href="{% url 'home' %}">Timesheet</a>
+      <small class="text-muted">dashboard</small>
+    </div>
+    <div class="d-flex align-items-center">
+      <div class="me-3 text-muted small">You are signed in as <strong>{{ user.get_full_name|default:user.username }}</strong></div>
+      {% if user.is_authenticated %}
+      <div class="dropdown">
+        <button class="btn profile-pill dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+          {% if user.profile.avatar.url %}
+            <img src="{{ user.profile.avatar.url }}" alt="avatar">
           {% else %}
-            <li class="nav-item"><a class="nav-link" href="{% url 'employee_dashboard' %}">My Dashboard</a></li>
+            <img src="https://ui-avatars.com/api/?name={{ user.username }}&background=7c3aed&color=fff" alt="avatar">
           {% endif %}
-          <li class="nav-item"><a class="nav-link" href="{% url 'logout' %}">Logout</a></li>
-        {% else %}
-          <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Login</a></li>
-          <li class="nav-item"><a class="nav-link" href="{% url 'signup' %}">Sign Up</a></li>
-        {% endif %}
-      </ul>
+          <div class="d-none d-sm-block text-start">
+            <div style="font-weight:600">{{ user.get_full_name|default:user.username }}</div>
+            <div class="small text-muted">{{ user.email }}</div>
+          </div>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" href="#">Profile</a></li>
+          <li><a class="dropdown-item" href="{% url 'my_timesheet' %}">My Timesheet</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
+        </ul>
+      </div>
+      {% endif %}
     </div>
   </div>
 </nav>
 
-<main class="container my-4">
-  {% block content %}{% endblock %}
-</main>
+<div class="d-flex">
+    <div class="sidebar">
+        <h5 class="text-light">Workspace</h5>
+        <a href="{% url 'add_time_entry' %}"><i class="fa-solid fa-play me-2"></i> Start Timer</a>
+        <a href="{% url 'my_timesheet' %}"><i class="fa-solid fa-calendar-days me-2"></i> My Timesheet</a>
+        <a href="{% url 'my_reports' %}"><i class="fa-solid fa-chart-pie me-2"></i> Reports</a>
+    </div>
+    <div class="content-wrapper">
+        {% block content %}{% endblock %}
+    </div>
+</div>
 
 <footer class="text-center py-3 border-top">
   <small>&copy; 2025 TimesheetApp</small>
 </footer>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 {% block body_extra %}{% endblock %}
 </body>

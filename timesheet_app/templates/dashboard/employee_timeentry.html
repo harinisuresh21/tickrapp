@@ -8,12 +8,14 @@
     <h3 class="fw-bold text-center mb-4">📝 Add / Edit Time Entry</h3>
 
     <div class="card shadow-lg border-0 rounded-4 p-4 animate__animated animate__fadeInUp">
-        <!-- Django messages -->
+        <!-- Django messages: hide messages tagged 'dashboard' on this page -->
         {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} shadow-sm rounded-3 mb-3">
-                    {{ message }}
-                </div>
+                {% if 'dashboard' not in message.tags %}
+                    <div class="alert alert-{{ message.tags }} shadow-sm rounded-3 mb-3">
+                        {{ message }}
+                    </div>
+                {% endif %}
             {% endfor %}
         {% endif %}
 
@@ -48,6 +50,9 @@
             <div class="heading">
                 <label for="id_project" class="heading">Project (Optional)</label>
                 {{ form.project|add_class:"form-select shadow-sm" }}
+                {% if not projects_available %}
+                    <div class="form-text text-muted">No active projects available. Contact admin to add projects or select Unassigned.</div>
+                {% endif %}
             </div>
 
             <!-- Work Date -->
@@ -59,12 +64,18 @@
             <!-- Start & End Time -->
             <div class="row">
                 <div class="col-md-6 mb-3">
-                    <label for="id_start_time" class="heading">Start Time</label>
-                    {{ form.start_time|add_class:"form-control shadow-sm" }}
+                    <label for="id_start_time_time" class="heading">Start Time</label>
+                    <div class="input-group">
+                        {{ form.start_time_time|add_class:"form-control shadow-sm" }}
+                        <button class="btn btn-outline-secondary" type="button" id="set-now-start">Now</button>
+                    </div>
                 </div>
                 <div class="col-md-6 mb-3">
-                    <label for="id_end_time" class="heading">End Time</label>
-                    {{ form.end_time|add_class:"form-control shadow-sm" }}
+                    <label for="id_end_time_time" class="heading">End Time</label>
+                    <div class="input-group">
+                        {{ form.end_time_time|add_class:"form-control shadow-sm" }}
+                        <button class="btn btn-outline-secondary" type="button" id="set-now-end">Now</button>
+                    </div>
                 </div>
             </div>
 
@@ -89,8 +100,13 @@
 
             <!-- Submit -->
             <div class="d-flex justify-content-between mt-4">
-                <a href="{% url 'employee_dashboard' %}" class="btn btn-outline-secondary px-4 py-2 rounded-3 shadow-sm hover-scale">⬅ Back</a>
-                <button type="submit" class="btn btn-primary px-4 py-2 rounded-3 shadow-sm hover-scale">💾 Save Entry</button>
+                <div>
+                    <a href="{% url 'employee_dashboard' %}" class="btn btn-outline-secondary px-4 py-2 rounded-3 shadow-sm hover-scale">⬅ Back</a>
+                    {% if entry %}
+                        <a href="{% url 'delete_time_entry' entry.id %}" class="btn btn-danger ms-2 px-3 py-2 rounded-3 shadow-sm">🗑 Delete</a>
+                    {% endif %}
+                </div>
+                <button type="submit" class="btn btn-primary px-4 py-2 rounded-3 shadow-sm hover-scale">{% if entry %}🔁 Update Entry{% else %}💾 Save Entry{% endif %}</button>
             </div>
         </form>
     </div>
@@ -112,34 +128,51 @@
     }
 </style>
 
-<!-- JS Validation -->
+<!-- JS Validation (single instance) -->
 <script>
-document.getElementById("timeEntryForm").addEventListener("submit", function(e) {
-    const start = document.getElementById("id_start_time").value;
-    const end = document.getElementById("id_end_time").value;
-    const breakMin = parseInt(document.getElementById("id_break_minutes").value || 0);
+(function(){
+  const form = document.getElementById("timeEntryForm");
+  if (!form) return;
 
-    if (!start || !end) {
-        alert("⏰ Please enter both Start and End time.");
-        e.preventDefault();
-        return;
+  form.addEventListener("submit", function(e) {
+    const startEl = document.getElementById("id_start_time_time");
+    const endEl = document.getElementById("id_end_time_time");
+    const breakEl = document.getElementById("id_break_minutes");
+
+    const start = startEl ? startEl.value : null;
+    const end = endEl ? endEl.value : null;
+    const breakMin = breakEl ? parseInt(breakEl.value || 0) : 0;
+
+    if (!start || !end) return; // allow server-side to validate
+
+    try {
+      const startDate = new Date(`1970-01-01T${start}:00`);
+      const endDate = new Date(`1970-01-01T${end}:00`);
+      const diff = (endDate - startDate) / (1000 * 60);
+      if (diff <= 0) { alert("⚠️ End Time must be after Start Time."); e.preventDefault(); return; }
+      if (diff - breakMin <= 0) { alert("⚠️ Duration must be positive after subtracting break."); e.preventDefault(); return; }
+    } catch (err) {
+      return;
     }
-
-    const startDate = new Date(`1970-01-01T${start}:00`);
-    const endDate = new Date(`1970-01-01T${end}:00`);
-    const diff = (endDate - startDate) / (1000 * 60); // minutes
-
-    if (diff <= 0) {
-        alert("⚠️ End Time must be after Start Time.");
-        e.preventDefault();
-        return;
-    }
-
-    if (diff - breakMin <= 0) {
-        alert("⚠️ Duration must be positive after subtracting break.");
-        e.preventDefault();
-        return;
-    }
+  });
+})();
+</script>
+<script>
+document.getElementById('set-now-start')?.addEventListener('click', function(){
+    const el = document.getElementById('id_start_time_time');
+    if (!el) return;
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mm = String(now.getMinutes()).padStart(2,'0');
+    el.value = `${hh}:${mm}`;
+});
+document.getElementById('set-now-end')?.addEventListener('click', function(){
+    const el = document.getElementById('id_end_time_time');
+    if (!el) return;
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mm = String(now.getMinutes()).padStart(2,'0');
+    el.value = `${hh}:${mm}`;
 });
 </script>
 {% endblock %}

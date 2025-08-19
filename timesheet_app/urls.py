@@ -10,6 +10,9 @@ from .views import (
     add_edit_entry,
     my_timesheet,
     my_reports,
+    start_time_entry,
+    stop_time_entry,
+    delete_entry,
 )
 
 urlpatterns = [
@@ -31,4 +34,11 @@ urlpatterns = [
     # ------------------- Timesheet & Reports -------------------
     path("employee/timesheet/", my_timesheet, name="my_timesheet"),
     path("employee/reports/", my_reports, name="my_reports"),
+
+    # ------------------- Start / Stop Timer -------------------
+    # urls.py
+    path("employee/start-timer/", start_time_entry, name="start_time_entry"),
+    path("employee/stop-timer/<int:entry_id>/", stop_time_entry, name="stop_time_entry"),
+    path("employee/delete-entry/<int:entry_id>/", delete_entry, name="delete_time_entry"),
+
 ]

@@ -2,158 +2,337 @@
 {% load static %}
 
 {% block content %}
-<div class="d-flex" id="wrapper">
-    <!-- Sidebar -->
-    <div class="border-end bg-light" id="sidebar-wrapper">
-        <div class="sidebar-heading fw-bold text-primary px-3 mt-3">TimesheetApp</div>
-        <div class="list-group list-group-flush">
-            <a href="{% url 'add_time_entry' %}" class="list-group-item list-group-item-action">⏱ Add Timer</a>
-            <a href="{% url 'my_timesheet' %}" class="list-group-item list-group-item-action">📅 My Timesheet</a>
-            <a href="{% url 'my_reports' %}" class="list-group-item list-group-item-action">📊 Reports</a>
-            <a href="#" class="list-group-item list-group-item-action">📂 Projects</a>
-            <a href="#" class="list-group-item list-group-item-action">👥 Team</a>
+<div class="container my-4">
+
+            <div class="topbar">
+            <div>
+                <h2 style="margin:0">Welcome back, {{ user.first_name|default:user.username }}</h2>
+                <div class="small text-muted">Here's your activity and quick actions</div>
+            </div>
+                <!-- Dashboard notifications hidden by request -->
+            <div class="d-flex gap-3">
+                <div class="card-modern text-center" style="min-width:140px">
+                    <div class="small text-muted">This week</div>
+                    <div style="font-size:1.4rem; font-weight:700">{{ total_hours|default:0 }}h</div>
+                </div>
+                <div class="card-modern text-center" style="min-width:140px">
+                    <div class="small text-muted">Approved</div>
+                    <div style="font-size:1.4rem; font-weight:700">{{ approved_this_month|default:0 }}</div>
+                </div>
+            </div>
+        </div>
+
+            {# Inline time tracker removed — using running partial UI only #}
+
+                <!-- Live Timer Section -->
+                <div class="card-modern mb-4 start-timer-card">
+                                <div id="running-timer">
+                                    {% include 'dashboard/_running_timer.html' %}
+                                </div>
+                    </div>
+    <!-- Recent Entries -->
+    <div class="card-modern mb-4" id="recent-entries">
+        <h5 class="mb-3"><i class="fa-solid fa-list me-2"></i>Recent Entries</h5>
+        <div class="table-responsive">
+            <table class="table table-borderless align-middle">
+                <thead>
+                    <tr class="text-muted small">
+                        <th>Date</th>
+                        <th>Project</th>
+                        <th>Start</th>
+                        <th>End</th>
+                        <th class="text-end">Hours</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for e in recent_entries %}
+                    <tr class="py-2">
+                        <td class="small text-muted">{{ e.work_date|date:"M. d, Y" }}</td>
+                        <td><strong>{{ e.project.name|default:"Unassigned" }}</strong><div class="small text-muted">{{ e.notes|truncatechars:40 }}</div></td>
+                        <td>{{ e.start_time|time:"H:i" }}</td>
+                        <td>{{ e.end_time|time:"H:i"|default:"-" }}</td>
+                        <td class="text-end"><span class="badge bg-light text-dark">{{ e.hours }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 
-    <!-- Main Content -->
-    <div id="page-content-wrapper" class="w-100">
-        <div class="container-fluid p-4">
-            <h3 class="fw-bold mb-4">👩‍💼 Employee Dashboard</h3>
-
-            <!-- Time Tracking Box -->
-            <div class="card shadow-sm p-3 mb-4">
-                <div class="d-flex align-items-center flex-wrap">
-                    <input type="text" id="taskDescription" class="form-control me-2 mb-2" placeholder="What are you working on?">
-                    <select class="form-select me-2 mb-2" style="max-width:200px;">
-                        <option>+ Project</option>
-                        {% for project in projects %}
-                            <option>{{ project.name }}</option>
-                        {% endfor %}
-                    </select>
-                    <input type="text" id="timer" class="form-control text-center fw-bold me-2 mb-2" value="00:00:00" readonly style="max-width:150px;">
-                    <button id="startStopBtn" class="btn btn-primary mb-2">START</button>
-                </div>
+    <!-- Git-style Horizontal Graph -->
+    <div class="card p-4 shadow-sm git-graph-card">
+        <h4 class="mb-3"><i class="fa fa-chart-bar"></i> Year Contribution</h4>
+        <div class="git-graph">
+            <div class="month-labels position-relative" style="height:28px;">
+                {% for month in month_labels %}
+                <div class="month-name position-absolute" style="left: {{ month.margin }}px">{{ month.name }}</div>
+                {% endfor %}
             </div>
-
-            <!-- Weekly Summary -->
-            <div class="card shadow-sm p-3 mb-4">
-                <h5 class="fw-bold mb-3">📅 This Week Summary ({{ week_start }} - {{ week_end }})</h5>
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Description</th>
-                            <th>Project</th>
-                            <th>Date</th>
-                            <th>Time Logged</th>
-                        </tr>
-                    </thead>
-                    <tbody id="timeEntries">
-                        {% for entry in entries %}
-                        <tr>
-                            <td>{{ entry.notes|default:"No description" }}</td>
-                            <td>{{ entry.project.name }}</td>
-                            <td>{{ entry.work_date }}</td>
-                            <td>{{ entry.duration_minutes|divisibleby:60 }} hrs</td>
-                        </tr>
-                        {% empty %}
-                        <tr><td colspan="4">No entries yet.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                <div class="fw-bold text-end">Week Total: <span id="weekTotal">{{ total_hours }} hrs</span></div>
-                <div class="mt-2 text-end">
-                    <span class="badge 
-                        {% if week_status == 'approved' %} bg-success
-                        {% elif week_status == 'submitted' %} bg-warning
-                        {% elif week_status == 'rejected' %} bg-danger
-                        {% else %} bg-secondary {% endif %}">
-                        {{ week_status|capfirst }}
-                    </span>
+            <div class="weeks-wrap" style="overflow-x:auto; padding-top:6px;">
+            <div class="weeks d-flex" style="gap:6px; min-width:900px;">
+                {% for week in cal_data %}
+                <div class="week d-flex flex-column" style="gap:6px;">
+                    {% for day in week %}
+                    {% if day.hours == 0 %}
+                        <div class="day" title="{{ day.date }} - {{ day.hours }}h" style="background-color: #ebedf0"></div>
+                    {% elif day.hours < 2 %}
+                        <div class="day" title="{{ day.date }} - {{ day.hours }}h" style="background-color: #c6e48b"></div>
+                    {% elif day.hours < 4 %}
+                        <div class="day" title="{{ day.date }} - {{ day.hours }}h" style="background-color: #7bc96f"></div>
+                    {% elif day.hours < 6 %}
+                        <div class="day" title="{{ day.date }} - {{ day.hours }}h" style="background-color: #239a3b"></div>
+                    {% else %}
+                        <div class="day" title="{{ day.date }} - {{ day.hours }}h" style="background-color: #196127"></div>
+                    {% endif %}
+                    {% endfor %}
                 </div>
+                {% endfor %}
+            </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Custom JS -->
+<!-- Styles -->
+<style>
+.start-timer-card {
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.start-timer-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+.start-timer-form .input-group {
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s;
+}
+.start-timer-form .input-group:focus-within {
+    box-shadow: 0 0 5px #0d6efd;
+}
+.start-timer-btn {
+    border-radius: 8px;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+.start-timer-btn:hover {
+    background-color: #198754;
+    transform: scale(1.03);
+}
+.input-group-text {
+    background-color: #0d6efd;
+    color: white;
+    border: none;
+}
+.input-group-text i {
+    font-size: 1.1rem;
+}
+.form-select, .form-control {
+    border-radius: 0;
+    border: 1px solid #ced4da;
+}
+.form-select:focus, .form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: none;
+}
+/* Git Graph Styles */
+.git-graph-card {
+    border-radius: 12px;
+}
+.git-graph {
+    display: flex;
+    flex-direction: column;
+}
+.month-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+.month-name {
+    font-weight: bold;
+    font-size: 0.85rem;
+    color: #495057;
+}
+.weeks {
+    display: flex;
+    gap: 2px;
+}
+.week {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.day {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+.day:hover {
+    transform: scale(1.2);
+    cursor: pointer;
+}
+</style>
 <script>
-let timerInterval;
-let seconds = 0;
-let running = false;
-
-function formatTime(secs) {
-    const h = String(Math.floor(secs / 3600)).padStart(2, '0');
-    const m = String(Math.floor((secs % 3600) / 60)).padStart(2, '0');
-    const s = String(secs % 60).padStart(2, '0');
-    return `${h}:${m}:${s}`;
+// AJAX start-timer and stop-timer handling
+async function postForm(form) {
+    const url = form.action;
+    const data = new FormData(form);
+    const resp = await fetch(url, { method: form.method, body: data, headers: { 'x-requested-with': 'XMLHttpRequest' } });
+    if (!resp.ok) throw resp;
+    return resp.json();
 }
 
-document.getElementById("startStopBtn").addEventListener("click", function() {
-    const btn = this;
-    if (!running) {
-        running = true;
-        btn.textContent = "STOP";
-        btn.classList.replace("btn-primary", "btn-danger");
-        timerInterval = setInterval(() => {
-            seconds++;
-            document.getElementById("timer").value = formatTime(seconds);
-        }, 1000);
-    } else {
-        running = false;
-        clearInterval(timerInterval);
-        btn.textContent = "START";
-        btn.classList.replace("btn-danger", "btn-primary");
+document.addEventListener('submit', function(e){
+    const form = e.target;
+    if (form.classList.contains('start-timer-form') || form.action.includes('/start-timer/') || form.action.includes('/stop-timer/')) {
+        e.preventDefault();
+        postForm(form).then(data => {
+                if (data.recent_html) {
+                    const recentNode = document.getElementById('recent-entries');
+                    if (recentNode) {
+                        recentNode.innerHTML = data.recent_html;
+                    }
+                }
+                if (data.running_html) {
+                    const runningNode = document.getElementById('running-timer');
+                    if (runningNode) {
+                        // Preserve the outer wrapper and replace inner content so IDs remain available
+                        runningNode.innerHTML = data.running_html;
+                    }
+                    // Re-init live timer if needed (prefer data-start-ms then fallback to data-start-time)
+                    const startMsAttr = runningNode?.querySelector('[data-start-ms]')?.dataset?.startMs;
+                    const startIsoAttr = runningNode?.querySelector('[data-start-time]')?.dataset?.startTime;
+                    const startText = startMsAttr || startIsoAttr;
+                    if (startText) {
+                        try {
+                            console.debug('Initializing live timer, startText=', startText);
+                            // clear previous interval if any
+                            if (window._liveTimerInterval) {
+                                clearInterval(window._liveTimerInterval);
+                                window._liveTimerInterval = null;
+                            }
+                            // ensure the startLiveTimer function exists
+                            if (typeof startLiveTimer === 'function') {
+                                startLiveTimer(startText);
+                            } else {
+                                // fallback: create a minimal live timer here that looks inside the running container
+                                (function(s){
+                                    const startMs = new Date(s).getTime();
+                                    const container = document.getElementById('running-timer');
+                                    const display = container?.querySelector('#live-timer') || document.getElementById('live-timer');
+                                    function update(){
+                                        const now = Date.now();
+                                        const elapsed = Math.max(0, Math.floor((now - startMs)/1000));
+                                        const h = Math.floor(elapsed/3600);
+                                        const m = Math.floor((elapsed%3600)/60);
+                                        const sec = elapsed%60;
+                                        if (display) display.textContent = String(h).padStart(2,'0')+":"+String(m).padStart(2,'0')+":"+String(sec).padStart(2,'0');
+                                    }
+                                    // initial update
+                                    update();
+                                    window._liveTimerInterval = setInterval(update,1000);
+                                })(startText);
+                            }
+                        } catch (ex) {
+                            console.error('Failed to initialize live timer', ex);
+                        }
+                    }
+        }).catch(function(err) {
+            // if non-JSON error, fallback to normal submit
+            if (err instanceof Response) {
+                err.text().then(function(text){ console.error('AJAX error', text); form.submit(); }).catch(function(){ form.submit(); });
+            } else { console.error(err); form.submit(); }
+        });
+    }
+});
+// Global live timer initializer used after AJAX swaps
+// Parse ISO string to milliseconds since epoch. Handles microseconds by truncating to milliseconds.
+function _parseIsoToMs(isoStr) {
+    if (!isoStr) return NaN;
+    try {
+        // Trim whitespace
+        let s = String(isoStr).trim();
+        // If fractional seconds have more than 3 digits, truncate to 3 (milliseconds)
+        // e.g. 2025-08-19T14:37:17.890039+00:00 -> 2025-08-19T14:37:17.890+00:00
+        s = s.replace(/(\.\d{3})\d+/, '$1');
+        const ms = Date.parse(s);
+        return isNaN(ms) ? NaN : ms;
+    } catch (e) {
+        console.warn('Failed parsing ISO string', isoStr, e);
+        return NaN;
+    }
+}
 
-        // Save entry dynamically (frontend only for now)
-        const desc = document.getElementById("taskDescription").value || "No description";
-        const project = document.querySelector("select").value;
-        const date = new Date().toLocaleDateString();
-        const timeLogged = formatTime(seconds);
+function startLiveTimer(startTime) {
+    if (window._liveTimerInterval) { clearInterval(window._liveTimerInterval); window._liveTimerInterval = null; }
+    // startTime may be a numeric milliseconds value (string or number) or an ISO string
+    let startMs = Number(startTime);
+    if (!startMs || isNaN(startMs)) startMs = _parseIsoToMs(startTime);
+    if (isNaN(startMs)) {
+        console.error('Invalid start time passed to startLiveTimer:', startTime);
+        return;
+    }
+    const display = document.getElementById('live-timer');
+    const inlineDisplay = document.getElementById('timer');
+    function update(){
+        const now = Date.now();
+        const elapsed = Math.max(0, Math.floor((now - startMs)/1000));
+        const h = Math.floor(elapsed/3600);
+        const m = Math.floor((elapsed%3600)/60);
+        const sec = elapsed%60;
+    const text = String(h).padStart(2,'0')+":"+String(m).padStart(2,'0')+":"+String(sec).padStart(2,'0');
+    if (display) display.textContent = text;
+    if (inlineDisplay) inlineDisplay.value = text;
+    }
+    update();
+    window._liveTimerInterval = setInterval(update,1000);
+}
 
-        const row = `<tr>
-                        <td>${desc}</td>
-                        <td>${project}</td>
-                        <td>${date}</td>
-                        <td>${timeLogged}</td>
-                    </tr>`;
-        document.getElementById("timeEntries").insertAdjacentHTML("beforeend", row);
+// Auto-init on page load if a running timer exists
+document.addEventListener('DOMContentLoaded', function(){
+    const runningEl = document.querySelector('#running-timer');
+    const startMsAttr = runningEl?.querySelector('[data-start-ms]')?.dataset?.startMs;
+    const startIsoAttr = runningEl?.querySelector('[data-start-time]')?.dataset?.startTime;
+    const startText = startMsAttr || startIsoAttr;
+    if (startText) startLiveTimer(startText);
 
-        // Update weekly total
-        const currentTotal = document.getElementById("weekTotal").textContent.split(":").map(Number);
-        const totalSecs = (currentTotal[0] * 3600 + currentTotal[1] * 60 + (currentTotal[2] || 0)) + seconds;
-        document.getElementById("weekTotal").textContent = formatTime(totalSecs);
-
-        // Reset timer
-        seconds = 0;
-        document.getElementById("timer").value = "00:00:00";
+    // Wire start/stop button
+    const startStopBtn = document.getElementById('startStopBtn');
+    if (startStopBtn) {
+        startStopBtn.addEventListener('click', function(ev){
+            ev.preventDefault();
+            const runningNow = Boolean(document.querySelector('#running-timer [data-start-ms], #running-timer [data-start-time]'));
+            if (runningNow) {
+                // Find stop form inside running-timer and submit it via AJAX
+                const stopForm = document.querySelector('#running-timer form[action*="stop-timer"]');
+                if (stopForm) {
+                    postForm(stopForm).then(data => {
+                        // replace fragments the same as global handler does
+                        if (data.recent_html) document.getElementById('recent-entries').innerHTML = data.recent_html;
+                        if (data.running_html) document.getElementById('running-timer').innerHTML = data.running_html;
+                        // reset inline timer display
+                        const inlineDisplay = document.getElementById('timer'); if (inlineDisplay) inlineDisplay.value = '00:00:00';
+                    }).catch(err => { console.error(err); stopForm.submit(); });
+                } else {
+                    // fallback: reload
+                    window.location.reload();
+                }
+            } else {
+                // Start: populate hidden inline form and submit
+                const proj = document.getElementById('projectSelect')?.value || '';
+                const notes = document.getElementById('taskDescription')?.value || '';
+                const projInput = document.getElementById('inline_project_input');
+                const notesInput = document.getElementById('inline_notes_input');
+                if (projInput) projInput.value = proj;
+                if (notesInput) notesInput.value = notes;
+                const hiddenForm = document.getElementById('inline-start-form');
+                if (hiddenForm) hiddenForm.dispatchEvent(new Event('submit', {cancelable: true, bubbles: true}));
+            }
+        });
     }
 });
 </script>
-
-<style>
-/* Sidebar styling */
-#sidebar-wrapper {
-    width: 220px;
-    min-height: 100vh;
-}
-#page-content-wrapper {
-    flex-grow: 1;
-}
-
-/* Attractive hover for sidebar */
-.list-group-item {
-    transition: background 0.3s ease;
-}
-.list-group-item:hover {
-    background: #e9f2ff;
-    font-weight: bold;
-}
-</style>
 {% endblock %}
-{% if messages %}
-  <ul class="messages">
-    {% for message in messages %}
-      <li class="{{ message.tags }}">{{ message }}</li>
-    {% endfor %}
-  </ul>
-{% endif %}

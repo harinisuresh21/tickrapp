@@ -35,8 +35,15 @@
                         <td>{{ entry.start_time|time:"H:i" }}</td>
                         <td>{{ entry.end_time|time:"H:i" }}</td>
                         <td>{{ entry.break_minutes }}</td>
-                        <td>{{ entry.duration_minutes|divisibleby:60|floatformat:2 }}</td>
+                        <td>{{ entry.hours }}</td>
                         <td>{{ entry.notes }}</td>
+                        <td class="text-end">
+                            <a href="{% url 'edit_time_entry' entry.id %}" class="btn btn-sm btn-outline-primary me-2">✏️ Edit</a>
+                            <form method="post" action="{% url 'delete_time_entry' entry.id %}" style="display:inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger">🗑 Delete</button>
+                            </form>
+                        </td>
                     </tr>
                 {% empty %}
                     <tr>

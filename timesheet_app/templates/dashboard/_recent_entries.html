@@ -1,0 +1,25 @@
+{% load static %}
+<div class="table-responsive">
+    <table class="table table-borderless align-middle">
+        <thead>
+            <tr class="text-muted small">
+                <th>Date</th>
+                <th>Project</th>
+                <th>Start</th>
+                <th>End</th>
+                <th class="text-end">Hours</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in recent_entries %}
+            <tr class="py-2">
+                <td class="small text-muted">{{ e.work_date|date:"M. d, Y" }}</td>
+                <td><strong>{{ e.project.name|default:"Unassigned" }}</strong><div class="small text-muted">{{ e.notes|truncatechars:40 }}</div></td>
+                <td>{{ e.start_time|time:"H:i" }}</td>
+                <td>{{ e.end_time|time:"H:i"|default:"-" }}</td>
+                <td class="text-end"><span class="badge bg-light text-dark">{{ e.hours }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

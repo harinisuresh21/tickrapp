@@ -1,0 +1,60 @@
+{% if running_timer %}
+<div class="running-timer p-3" data-start-time="{{ running_timer.start_time|date:'c' }}" data-start-ms="{{ running_timer.start_time|date:'U' }}000">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <div class="small text-muted">Running</div>
+            <div class="h5 mb-0"><strong>{{ running_timer.project.name|default:"Unassigned" }}</strong></div>
+            <div class="small text-muted">Started: {{ running_timer.start_time|date:'M d, Y H:i' }}</div>
+        </div>
+        <div class="text-end">
+            <div class="small text-muted">Elapsed</div>
+            <div id="live-timer" class="fw-bold fs-3">00:00:00</div>
+        </div>
+    </div>
+    <div class="mt-3 d-flex gap-2">
+        <form method="POST" action="{% url 'stop_time_entry' running_timer.id %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-lg">
+                <i class="fa-solid fa-stop me-2"></i> Stop
+            </button>
+        </form>
+        <div class="align-self-center text-muted small">&nbsp;</div>
+    </div>
+
+    <style>
+        .running-timer { background: linear-gradient(90deg, #fff, #fbfbfd); border-radius:8px; }
+        .running-timer .fs-3 { font-family: 'Roboto Mono', monospace; }
+    </style>
+
+    {# Timer initialization moved to global script in employee.html to ensure it runs after AJAX replacement #}
+
+{% else %}
+<div class="start-timer p-3">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <div class="small text-muted">No active timer</div>
+            <div class="h6 mb-0">Start a timer</div>
+            <div class="small text-muted">Choose project and notes</div>
+        </div>
+    </div>
+    <div class="mt-3">
+        <form method="POST" action="{% url 'start_time_entry' %}" class="start-timer-form d-flex gap-2 align-items-start">
+            {% csrf_token %}
+            <select name="project" class="form-select" style="min-width:180px;">
+                <option value="">Unassigned</option>
+                {% for p in projects %}
+                    <option value="{{ p.id }}">{{ p.name }}</option>
+                {% endfor %}
+            </select>
+            <input name="notes" class="form-control" placeholder="Notes (optional)" />
+            <button type="submit" class="btn btn-success start-timer-btn">
+                <i class="fa-solid fa-play me-2"></i> Start
+            </button>
+        </form>
+    </div>
+
+    <style>
+        .start-timer { background: linear-gradient(90deg, #ffffff, #f8fbf8); border-radius:8px; }
+    </style>
+</div>
+{% endif %}

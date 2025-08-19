@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <div class="card p-4">
+    <h3>Confirm delete</h3>
+    <p>Are you sure you want to delete the entry for <strong>{{ entry.work_date }}</strong>?</p>
+    <form method="post">
+      {% csrf_token %}
+      <a href="{% url 'employee_dashboard' %}" class="btn btn-secondary">Cancel</a>
+      <button type="submit" class="btn btn-danger">Delete</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
