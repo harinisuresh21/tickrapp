@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block sidebar %}
+  {% include 'dashboard/manager_sidebar.html' %}
+{% endblock %}
+{% block content %}
+<div class="container my-4">
+  <h4>Employee Reports</h4>
+  <form method="get" class="mb-3 row g-2 align-items-center">
+    <div class="col-auto">
+      <label class="form-label small">Project</label>
+      <select name="project" class="form-select">
+        <option value="">All Projects</option>
+        {% for p in projects %}
+          <option value="{{ p.id }}">{{ p.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <label class="form-label small">Start</label>
+      <input type="date" name="start_date" value="{{ start|date:'Y-m-d' }}" class="form-control">
+    </div>
+    <div class="col-auto">
+      <label class="form-label small">End</label>
+      <input type="date" name="end_date" value="{{ end|date:'Y-m-d' }}" class="form-control">
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-primary">Filter</button>
+    </div>
+  </form>
+
+  <div class="card mb-3">
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead><tr><th>Employee</th><th>Project</th><th>Hours</th><th>Billable</th><th>%Billable</th></tr></thead>
+        <tbody>
+          {% for r in rows %}
+            <tr>
+              <td>{{ r.employee }}</td>
+              <td>{{ r.project }}</td>
+              <td>{{ r.hours }}</td>
+              <td>{{ r.billable_hours }}</td>
+              <td>{{ r.percent_billable }}%</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="text-muted">No data</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <!-- Charts placeholders -->
+  <div class="row">
+    <div class="col-md-6 card p-3">
+      <canvas id="chartEmployees"></canvas>
+    </div>
+    <div class="col-md-6 card p-3">
+      <canvas id="chartProjects"></canvas>
+    </div>
+  </div>
+</div>
+{% block body_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const rows = JSON.parse('{{ rows_json|escapejs }}');
+const empMap = {};
+const projMap = {};
+rows.forEach(r=>{ empMap[r.employee] = (empMap[r.employee]||0)+r.hours; projMap[r.project] = (projMap[r.project]||0)+r.hours });
+new Chart(document.getElementById('chartEmployees'), {type:'bar', data:{labels:Object.keys(empMap), datasets:[{label:'Hours',data:Object.values(empMap), backgroundColor:'rgba(13,110,253,0.6)'}]}});
+new Chart(document.getElementById('chartProjects'), {type:'bar', data:{labels:Object.keys(projMap), datasets:[{label:'Hours',data:Object.values(projMap), backgroundColor:'rgba(25,135,84,0.6)'}]}});
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,33 @@
+<script>
+function _parseIsoToMs(isoStr) {
+    if (!isoStr) return NaN;
+    try {
+        let s = String(isoStr).trim();
+        s = s.replace(/(\.\d{3})\d+/, '$1');
+        const ms = Date.parse(s);
+        return isNaN(ms) ? NaN : ms;
+    } catch (e) { return NaN; }
+}
+
+function startLiveTimerFor(containerId, startTime) {
+    // clear any previous interval stored on the container element
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    if (container._liveTimerInterval) { clearInterval(container._liveTimerInterval); container._liveTimerInterval = null; }
+    let startMs = Number(startTime);
+    if (!startMs || isNaN(startMs)) startMs = _parseIsoToMs(startTime);
+    if (isNaN(startMs)) return;
+    const display = container.querySelector('#live-timer') || container.querySelector('.live-timer-display');
+    function update(){
+        const now = Date.now();
+        const elapsed = Math.max(0, Math.floor((now - startMs)/1000));
+        const h = Math.floor(elapsed/3600);
+        const m = Math.floor((elapsed%3600)/60);
+        const s = elapsed%60;
+        const text = String(h).padStart(2,'0')+":"+String(m).padStart(2,'0')+":"+String(s).padStart(2,'0');
+        if (display) display.textContent = text;
+    }
+    update();
+    container._liveTimerInterval = setInterval(update, 1000);
+}
+</script>

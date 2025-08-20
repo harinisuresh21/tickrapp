@@ -1,0 +1,10 @@
+<div class="sidebar">
+  <h5 class="text-light mb-3">Manager</h5>
+  <a href="{% url 'manager_dashboard' %}"><i class="fa-solid fa-home me-2"></i> Dashboard</a>
+  <a href="{% url 'manager_add_time_entry' %}"><i class="fa-solid fa-plus me-2"></i> Add Entry</a>
+  <a href="{% url 'manager_my_timesheet' %}"><i class="fa-solid fa-clock-rotate-left me-2"></i> My Timesheet</a>
+  <a href="{% url 'manager_my_reports' %}"><i class="fa-solid fa-chart-simple me-2"></i> My Reports</a>
+  <a href="{% url 'approvals_list' %}"><i class="fa-solid fa-check-to-slot me-2"></i> Approvals</a>
+  <a href="{% url 'manager_employee_reports' %}"><i class="fa-solid fa-users-line me-2"></i> Employee Reports</a>
+  <a href="{% url 'projects_list' %}"><i class="fa-solid fa-diagram-project me-2"></i> Projects</a>
+</div>

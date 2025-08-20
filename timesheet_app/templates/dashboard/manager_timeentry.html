@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block sidebar %}
+  {% include 'dashboard/manager_sidebar.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h3 class="fw-bold text-center mb-4">📝 Add / Edit Time Entry</h3>
+
+    <div class="card shadow-lg border-0 rounded-4 p-4 animate__animated animate__fadeInUp">
+        {% if messages %}
+            {% for message in messages %}
+                {% if 'dashboard' not in message.tags %}
+                    <div class="alert alert-{{ message.tags }} shadow-sm rounded-3 mb-3">
+                        {{ message }}
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+
+        {% if form.errors %}
+            <div class="alert alert-danger shadow-sm rounded-3 mb-3">
+                <ul class="mb-0">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        <li><strong>{{ field|capfirst }}:</strong> {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        <form id="timeEntryForm" method="POST" novalidate class="needs-validation">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label for="id_project" class="form-label">Project (Optional)</label>
+                {{ form.project|add_class:"form-select shadow-sm" }}
+                {% if not projects_available %}
+                    <div class="form-text text-muted">No active projects available. Contact admin to add projects or select Unassigned.</div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label for="id_work_date" class="form-label">Work Date</label>
+                {{ form.work_date|add_class:"form-control shadow-sm" }}
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="id_start_time_time" class="form-label">Start Time</label>
+                    <div class="input-group">
+                        {{ form.start_time_time|add_class:"form-control shadow-sm" }}
+                        <button class="btn btn-outline-secondary" type="button" id="set-now-start">Now</button>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="id_end_time_time" class="form-label">End Time</label>
+                    <div class="input-group">
+                        {{ form.end_time_time|add_class:"form-control shadow-sm" }}
+                        <button class="btn btn-outline-secondary" type="button" id="set-now-end">Now</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="id_break_minutes" class="form-label">Break (minutes)</label>
+                {{ form.break_minutes|add_class:"form-control shadow-sm" }}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Billable</label>
+                {{ form.billable }}
+            </div>
+
+            <div class="mb-3">
+                <label for="id_notes" class="form-label">Notes</label>
+                {{ form.notes|add_class:"form-control shadow-sm" }}
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+                <div>
+                    <a href="{% url 'manager_my_timesheet' %}" class="btn btn-outline-secondary px-4 py-2 rounded-3 shadow-sm hover-scale">⬅ Back</a>
+                    {% if entry %}
+                        <a href="{% url 'delete_time_entry' entry.id %}" class="btn btn-danger ms-2 px-3 py-2 rounded-3 shadow-sm">🗑 Delete</a>
+                    {% endif %}
+                </div>
+                <button type="submit" class="btn btn-primary px-4 py-2 rounded-3 shadow-sm hover-scale">{% if entry %}🔁 Update Entry{% else %}💾 Save Entry{% endif %}</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.getElementById('set-now-start')?.addEventListener('click', function(){
+    const el = document.getElementById('id_start_time_time');
+    if (!el) return;
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mm = String(now.getMinutes()).padStart(2,'0');
+    el.value = `${hh}:${mm}`;
+});
+document.getElementById('set-now-end')?.addEventListener('click', function(){
+    const el = document.getElementById('id_end_time_time');
+    if (!el) return;
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mm = String(now.getMinutes()).padStart(2,'0');
+    el.value = `${hh}:${mm}`;
+});
+</script>
+
+{% endblock %}

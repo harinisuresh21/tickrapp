@@ -96,6 +96,12 @@ class TimesheetEntryForm(forms.ModelForm):
         start_t = cleaned.get('start_time_time')
         end_t = cleaned.get('end_time_time')
 
+        # Disallow future dates for work_date
+        if work_date:
+            today = _dt.date.today()
+            if work_date > today:
+                raise ValidationError('Work date cannot be in the future.')
+
         # If times provided, ensure logical ordering
         if start_t and end_t:
             start_dt = _dt.datetime.combine(work_date, start_t)
@@ -161,3 +167,12 @@ class ProjectForm(forms.ModelForm):
             "billable_default": forms.CheckboxInput(),
             "active": forms.CheckboxInput(),
         }
+
+
+from .models import Profile
+
+
+class ProfileForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        fields = ['avatar']

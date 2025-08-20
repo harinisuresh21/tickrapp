@@ -1,23 +1,72 @@
 {% extends 'base.html' %}
+{% block sidebar %}
+  {% include 'dashboard/manager_sidebar.html' %}
+{% endblock %}
 {% block content %}
 <div class="container my-4">
   <h3>Pending Approvals</h3>
   {% if pending %}
-    <table class="table">
-      <thead><tr><th>User</th><th>Week Start</th><th>Hours</th><th></th></tr></thead>
-      <tbody>
-        {% for w in pending %}
-          <tr>
-            <td>{{ w.user.get_full_name|default:w.user.username }}</td>
-            <td>{{ w.week_start }}</td>
-            <td>{{ w.total_hours|default:'-' }}</td>
-            <td><a href="{% url 'week_detail' w.id %}" class="btn btn-sm btn-primary">Review</a></td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="list-group mb-4">
+      {% for w in pending %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <div style="font-weight:600">{{ w.user.get_full_name|default:w.user.username }}</div>
+            <div class="small text-muted">Week of {{ w.week_start|date:'M d, Y' }}</div>
+          </div>
+          <div>
+            <a href="{% url 'week_detail' w.id %}" class="btn btn-sm btn-primary">Review</a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
   {% else %}
     <div class="alert alert-info">No submitted timesheets pending approval.</div>
   {% endif %}
+
+  <h3>Approved</h3>
+  <div class="row mb-4">
+    {% for w in approved %}
+      <div class="col-md-3">
+        <div class="card p-2 mb-2">
+          <div class="d-flex align-items-center gap-2">
+            {% if w.user.profile and w.user.profile.avatar %}
+              <img src="{{ w.user.profile.avatar.url }}" style="width:40px;height:40px;border-radius:50%;object-fit:cover">
+            {% else %}
+              <img src="https://ui-avatars.com/api/?name={{ w.user.username }}&background=7c3aed&color=fff" style="width:40px;height:40px;border-radius:50%">
+            {% endif %}
+            <div>
+              <div style="font-weight:600">{{ w.user.get_full_name|default:w.user.username }}</div>
+              <div class="small text-muted">Week {{ w.week_start }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="text-muted">No approved weeks yet.</div>
+    {% endfor %}
+  </div>
+
+  <h3>Rejected</h3>
+  <div class="row mb-4">
+    {% for w in rejected %}
+      <div class="col-md-3">
+        <div class="card p-2 mb-2">
+          <div class="d-flex align-items-center gap-2">
+            {% if w.user.profile and w.user.profile.avatar %}
+              <img src="{{ w.user.profile.avatar.url }}" style="width:40px;height:40px;border-radius:50%;object-fit:cover">
+            {% else %}
+              <img src="https://ui-avatars.com/api/?name={{ w.user.username }}&background=7c3aed&color=fff" style="width:40px;height:40px;border-radius:50%">
+            {% endif %}
+            <div>
+              <div style="font-weight:600">{{ w.user.get_full_name|default:w.user.username }}</div>
+              <div class="small text-muted">Week {{ w.week_start }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="text-muted">No rejected weeks.</div>
+    {% endfor %}
+  </div>
 </div>
 {% endblock %}
