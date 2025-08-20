@@ -8,47 +8,177 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
-    :root{
-      --primary:#0d6efd;
-      --muted:#6c757d;
-      --card:#ffffff;
-      --bg:#f4f6f9;
-      --accent:#7c3aed;
+    :root {
+      --primary: #0d6efd;
+      --muted: #6c757d;
+      --card: #ffffff;
+      --bg: #f4f6f9;
+      --accent: #7c3aed;
     }
-    body { display: flex; min-height: 100vh; flex-direction: column; }
+    body {
+      display: flex;
+      min-height: 100vh;
+      flex-direction: column;
+      margin: 0;
+      background: var(--bg);
+      font-family: 'Poppins', sans-serif;
+      color: #222;
+    }
     main { flex: 1; }
-    .sidebar { width: 220px; background: linear-gradient(180deg,#23272b, #2b3136); color: #fff; min-height: 100vh; padding: 24px; }
-    .sidebar a { display: block; color: #cfe2ff; margin: 12px 0; text-decoration: none; padding: 8px 10px; border-radius: 8px; }
-    .sidebar a:hover { background: rgba(255,255,255,0.03); color: #fff; text-decoration: none; }
-    .content-wrapper { flex: 1; padding: 28px; background: var(--bg); min-height: 100vh; }
-    .contribution-graph { display: grid; grid-template-columns: repeat(7, 18px); gap: 4px; }
-    .day { width: 18px; height: 18px; border-radius: 4px; cursor: pointer; transition: transform 0.12s; }
-    .day:hover { transform: scale(1.15); }
-    .topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px; }
-    .app-brand { font-weight:700; letter-spacing:0.3px; display:flex; align-items:center; gap:10px; }
-    .profile-pill { display:flex; align-items:center; gap:10px; background:var(--card); padding:6px 10px; border-radius:999px; box-shadow:0 3px 8px rgba(12,12,12,0.06); }
-    .profile-pill img { width:36px; height:36px; border-radius:50%; object-fit:cover; }
-    .card-modern { background: linear-gradient(180deg, #fff, #fbfdff); border-radius:12px; padding:18px; box-shadow: 0 6px 20px rgba(20,20,50,0.06); }
+    .sidebar {
+      width: 220px;
+      background: linear-gradient(180deg, #23272b, #2b3136);
+      color: #fff;
+      min-height: 100vh;
+      padding: 24px;
+      transition: all 0.3s ease;
+    }
+    .sidebar a {
+      display: block;
+      color: #cfe2ff;
+      margin: 12px 0;
+      text-decoration: none;
+      padding: 8px 10px;
+      border-radius: 8px;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+    .sidebar a:hover {
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      text-decoration: none;
+    }
+    .content-wrapper {
+      flex: 1;
+      padding: 28px 40px;
+      background: var(--bg);
+      min-height: 100vh;
+      transition: padding 0.3s ease;
+    }
+    .contribution-graph {
+      display: grid;
+      grid-template-columns: repeat(7, 18px);
+      gap: 4px;
+    }
+    .day {
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: transform 0.12s ease;
+    }
+    .day:hover {
+      transform: scale(1.15);
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+    .app-brand {
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.8rem;
+      user-select: none;
+      color: #7c3aed;
+    }
+    .profile-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--card);
+      padding: 6px 10px;
+      border-radius: 999px;
+      box-shadow: 0 3px 8px rgba(12,12,12,0.06);
+      cursor: pointer;
+      transition: box-shadow 0.3s ease;
+    }
+    .profile-pill:hover {
+      box-shadow: 0 6px 14px rgba(12,12,12,0.12);
+    }
+    .profile-pill img {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    .card-modern {
+      background: linear-gradient(180deg, #fff, #fbfdff);
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 6px 20px rgba(20,20,50,0.06);
+      transition: box-shadow 0.3s ease, transform 0.3s ease;
+    }
+    .card-modern:hover {
+      box-shadow: 0 12px 35px rgba(20,20,50,0.12);
+      transform: translateY(-4px);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 992px) {
+      .sidebar {
+        position: fixed;
+        width: 180px;
+        height: 100vh;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        z-index: 1100;
+      }
+      .sidebar.show {
+        transform: translateX(0);
+      }
+      .content-wrapper {
+        padding: 20px;
+      }
+    }
+    @media (max-width: 768px) {
+      .content-wrapper {
+        padding: 15px 15px 30px 15px;
+      }
+      .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+    }
+    @media (max-width: 576px) {
+      .app-brand {
+        font-size: 1.5rem;
+        gap: 6px;
+      }
+      .profile-pill {
+        padding: 5px 8px;
+      }
+    }
   </style>
   {% block head_extra %}{% endblock %}
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-light" style="background: linear-gradient(90deg, rgba(255,255,255,0.7), rgba(250,250,255,0.6)); border-bottom:1px solid rgba(0,0,0,0.04);">
-  <div class="container">
-    <div class="app-brand">
+  <div class="container-fluid d-flex justify-content-between align-items-center">
+    <button class="btn btn-outline-primary d-lg-none" type="button" aria-label="Toggle sidebar" id="toggle-sidebar-btn">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    <div class="app-brand ms-lg-3">
       <i class="fa-solid fa-clock fa-lg" style="color:var(--accent)"></i>
-      <span class="navbar-brand">Timesheet</span>
+      <span class="navbar-brand">Tickr</span>
       <small class="text-muted">dashboard</small>
     </div>
     <div class="d-flex align-items-center">
-      <div class="me-3 text-muted small">You are signed in as <strong>{{ user.get_full_name|default:user.username }}</strong></div>
+      <div class="me-3 text-muted small d-none d-md-block">You are signed in as <strong>{{ user.get_full_name|default:user.username }}</strong></div>
       {% if user.is_authenticated %}
       <div class="dropdown">
         <button class="btn profile-pill dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
           {% if user.profile and user.profile.avatar %}
-            <img src="{{ user.profile.avatar.url }}" alt="avatar">
+            <img src="{{ user.profile.avatar.url }}" alt="avatar" />
           {% else %}
-            <img src="https://ui-avatars.com/api/?name={{ user.username }}&background=7c3aed&color=fff" alt="avatar">
+            <img src="https://ui-avatars.com/api/?name={{ user.username }}&background=7c3aed&color=fff" alt="avatar" />
           {% endif %}
           <div class="d-none d-sm-block text-start">
             <div style="font-weight:600">{{ user.get_full_name|default:user.username }}</div>
@@ -73,9 +203,9 @@
 
 <div class="d-flex">
   {% block sidebar %}
-  <div class="sidebar">
+  <div class="sidebar" id="sidebar">
     <h5 class="text-light">Workspace</h5>
-    <a href="{% url 'add_time_entry' %}"><i class="fa-solid fa-play me-2"></i> Start Timer</a>
+    <a href="{% url 'add_time_entry' %}"><i class="fa-solid fa-play me-2"></i> Add</a>
     <a href="{% url 'my_timesheet' %}"><i class="fa-solid fa-calendar-days me-2"></i> My Timesheet</a>
     <a href="{% url 'my_reports' %}"><i class="fa-solid fa-chart-pie me-2"></i> Reports</a>
   </div>
@@ -100,13 +230,25 @@
 <footer class="text-center py-3 border-top">
   <small>&copy; 2025 TimesheetApp</small>
 </footer>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+  // Sidebar toggle for mobile
+  const sidebar = document.getElementById('sidebar');
+  const toggleBtn = document.getElementById('toggle-sidebar-btn');
+  toggleBtn?.addEventListener('click', () => {
+    sidebar.classList.toggle('show');
+  });
+
   // Auto-dismiss messages after 10 seconds
   document.addEventListener('DOMContentLoaded', function(){
     setTimeout(function(){
       const alerts = document.querySelectorAll('#global-messages .alert');
-      alerts.forEach(a => { a.style.transition = 'opacity 0.6s'; a.style.opacity = 0; setTimeout(()=>a.remove(),700); });
+      alerts.forEach(alert => {
+        alert.style.transition = 'opacity 0.6s';
+        alert.style.opacity = 0;
+        setTimeout(()=>alert.remove(), 700);
+      });
     }, 10000);
   });
 </script>

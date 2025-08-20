@@ -27,8 +27,9 @@
         /* Left Image Section */
         .brand-section {
             flex: 1;
-            background: url("{% static 'images/home.png' %}") no-repeat center center;
-            background-size: cover;
+            background: url("{% static 'images/login.png' %}") no-repeat center center;
+            background-size:800px 900px;
+            padding-left: 50px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -121,6 +122,38 @@
                 opacity: 1;
             }
         }
+        @media (max-width: 992px) {
+  .login-wrapper {
+    flex-direction: column;
+  }
+  .brand-section {
+    height: 300px;
+    background-size: contain !important;
+    background-position: center center !important;
+  }
+  .login-section {
+    padding: 24px 20px;
+  }
+  .login-card {
+    width: 100%;
+    max-width: 400px;
+    padding: 30px 20px;
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  }
+}
+
+@media (max-width: 576px) {
+  .login-wrapper {
+    padding: 0 15px;
+  }
+  .login-card h3 {
+    font-size: 1.8rem;
+  }
+  .brand-section {
+    height: 200px;
+  }
+}
     </style>
 </head>
 <body>

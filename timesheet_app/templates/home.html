@@ -1,348 +1,280 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Timesheet & Reporting App</title>
+    <!-- Google Fonts: Poppins & Pacifico -->
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
     <style>
+        /* Global Styling */
         body {
-            font-family: 'Segoe UI', Tahoma, sans-serif;
+            font-family: 'Poppins', sans-serif;
+            background: #f7f6f4;
+            color: #333;
+            scroll-behavior: smooth;
         }
 
         /* Navbar Styling */
-        /* Navbar Styling */
-.navbar {
-    background: #222;
-    padding: 15px 0; /* Increased height */
+        .navbar {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            padding: 18px 0;
+            box-shadow: 0 6px 18px rgba(118, 75, 162, 0.4);
+            transition: background 0.5s ease;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .navbar:hover {
+            background: linear-gradient(90deg, #5a67d8, #6b46c1);
+        }
+        .navbar-brand {
+            font-family: 'Pacifico', cursive;
+            font-weight: 400;
+            font-size: 2.6rem;
+            color: #ffcc00 !important;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            letter-spacing: 0.8px;
+            user-select: none;
+            transition: transform 0.3s ease;
+        }
+        .navbar-brand:hover {
+            transform: scale(1.1);
+            color: #ffe066 !important;
+        }
+        /* Icon next to brand name */
+        .navbar-brand i {
+            font-size: 2.8rem;
+            color: #ffcc00;
+            text-shadow: 0 0 6px #ffe066;
+        }
+        /* Navbar links style */
+        .nav-link {
+            color: #f1f1f1 !important;
+            font-weight: 600;
+            font-size: 1.15rem;
+            padding: 10px 16px;
+            border-radius: 8px;
+            transition: background 0.3s ease, color 0.3s ease, transform 0.2s ease;
+        }
+        .nav-link.active, 
+        .nav-link:hover {
+            color: #fff !important;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.35);
+        }
+        /* Navbar buttons */
+        .btn-light {
+            background: #f8f9facc;
+            color: #4e73df !important;
+            border: 2px solid #4e73df;
+            font-weight: 600;
+            font-size: 1rem;
+            border-radius: 30px;
+            padding: 6px 18px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(78, 115, 223, 0.3);
+        }
+        .btn-light:hover {
+            background: #4e73df;
+            color: white !important;
+            box-shadow: 0 10px 25px rgba(78, 115, 223, 0.6);
+            transform: translateY(-2px) scale(1.1);
+        }
+        .btn-warning {
+            background: #ffcc00;
+            color: #333 !important;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 1rem;
+            padding: 6px 20px;
+            box-shadow: 0 5px 20px rgba(255, 204, 0, 0.4);
+            transition: all 0.3s ease;
+        }
+        .btn-warning:hover {
+            background: #ffdd33;
+            color: #222 !important;
+            box-shadow: 0 10px 30px rgba(255, 221, 51, 0.7);
+            transform: translateY(-2px) scale(1.1);
+        }
+
+        .hero-images-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 38px;
+    margin-top: 40px;
+    margin-bottom: 22px;
+}
+.hero-img-card {
+    background: #fff;
+    border-radius: 22px;
+    box-shadow: 0 6px 40px rgba(80, 80, 150, 0.14);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: box-shadow 0.3s, transform 0.3s;
+    width: 670px;
+    height: 440px;
+}
+.hero-img-card img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: cover;
+    display: block;
+}
+@media (max-width: 900px) {
+    .hero-images-row {
+        flex-direction: column;
+        gap: 22px;
+    }
+    .hero-img-card {
+        width: 90vw;
+        height: 190px;
+    }
 }
 
-.navbar-brand {
-    font-weight: 700;
-    font-size: 1.8rem; /* Bigger brand name */
-    color: #ffc107 !important;
-    letter-spacing: 1px;
-    padding-right: 70px;
-    margin-right: 60px;
-}
 
-.nav-link {
-    color: white !important;
-    font-weight: 600;
-    font-size: 1.2rem; /* Increased text size */
-    padding: 10px 20px; /* Bigger clickable area */
-    transition: all 0.3s ease;
-}
-
-.nav-link:hover {
-    color: #ffc107 !important;
-    transform: scale(1.15);
-}
-
-/* Login Button Style */
-.login-btn {
-    background: #4e73df;
-    border-radius: 5px;
-    color: white !important;
-}
-
-.login-btn:hover {
-    background: #3656b3;
-}
-
-/* Sign Up Button Style */
-.signup-btn {
-    background: #1cc88a;
-    border-radius: 5px;
-    color: white !important;
-    margin-left: 10px;
-    padding-right: 20px;
-    padding-left: 60px; /* Wider button */
-    font-weight: 600;
-}
-
-.signup-btn:hover {
-    background: #159d6f;
-}
-
-
-        /* Hero Section */
-        .hero {
-            background: linear-gradient(to right, #4e73df, #1cc88a);
-            color: white;
-            padding: 120px 20px;
+        /* Subheading under hero */
+        .hero-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #5b4b8a;
             text-align: center;
+            margin-top: 24px;
+            padding: 0 20px;
+            font-family: 'Poppins', sans-serif;
+            text-shadow: 1px 1px 3px #fff2a2;
+            animation: fadeInText 1.8s ease forwards;
         }
-        .hero h1 {
-            font-weight: 800;
-            font-size: 3rem;
-        }
-        .hero p {
-            font-size: 1.2rem;
-            font-weight: 500;
+        @keyframes fadeInText {
+            from {opacity: 0; transform: translateY(20px)}
+            to {opacity: 1; transform: translateY(0)}
         }
 
         /* Features Section */
         #features h2 {
-            font-weight: 800;
-            color: #222;
+            font-weight: 900;
+            font-size: 2.8rem;
+            color: #333;
+            margin-bottom: 2rem;
+            letter-spacing: 1px;
         }
         .feature-card {
-            border: 2px solid #0c0c0c;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-            background: white;
+            border-radius: 18px;
+            background: linear-gradient(145deg, #fcfcff, #e0eafb);
+            box-shadow: 10px 10px 30px #bec7e1,
+                        -10px -10px 30px #ffffff;
+            padding: 36px 28px;
+            transition: all 0.4s ease;
+            cursor: pointer;
         }
         .feature-card:hover {
-            transform: translateY(-10px) scale(1.02);
-            box-shadow: 0 18px 25px rgba(0,0,0,0.15);
-            border-color: #030303;
-            background-color: #c1f5e2;
-
+            transform: translateY(-14px) scale(1.05);
+            box-shadow: 15px 15px 45px #a9b1de,
+                        -15px -15px 45px #ffffff;
+            background: linear-gradient(145deg, #def2ff, #c3e5fa);
         }
         .feature-icon {
-            font-size: 100px;
+            font-size: 110px;
             color: #4e73df;
-            font-weight: 400;
+            margin-bottom: 18px;
+            filter: drop-shadow(0 4px 8px #8a9edaaa);
         }
         .feature-card h5 {
-            font-weight: 700;
-            margin-top: 15px;
+            font-weight: 900;
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+            color: #2c3e92;
+        }
+        .feature-card p {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #555;
+            line-height: 1.45;
         }
 
-        /* Image Gallery */
-        .gallery img {
-            border-radius: 10px;
-            transition: all 0.3s ease;
+        /* Feedback Section */
+        .feedback-card {
+            border-left: 6px solid #4e73df;
+            background: #fff;
+            padding: 28px 24px;
+            border-radius: 12px;
+            box-shadow: 0 8px 18px rgba(78, 115, 223, 0.18);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 400;
         }
-        .gallery img:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        .feedback-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 16px 32px rgba(78, 115, 223, 0.32);
+        }
+        .feedback-card h6 {
+            font-weight: 700;
+            color: #32467b;
+        }
+        .feedback-card p {
+            font-size: 1.15rem;
+            color: #555555cc;
+            line-height: 1.58;
         }
 
         /* Footer */
         footer {
-            background: #222;
+            background: linear-gradient(90deg, #667eea, #764ba2);
             color: white;
-            padding: 15px;
-        }
-        footer p {
-            margin: 0;
-            font-size: 0.9rem;
-        }
-        footer i {
-            color: #e74c3c;
-        }
-        /* Smooth Scroll */
-        html {
-            scroll-behavior: smooth;
-        }
-        /* Responsive Adjustments */
-        @media (max-width: 768px) {
-            .navbar-brand {
-                font-size: 1.5rem; /* Smaller brand name on mobile */
-            }
-            .hero h1 {
-                font-size: 2.5rem; /* Smaller hero title on mobile */
-            }
-            .hero p {
-                font-size: 1rem; /* Smaller hero text on mobile */
-            }
-            .feature-icon {
-                font-size: 40px; /* Smaller icons on mobile */
-            }
-        }
-        @media (max-width: 576px) {
-            .navbar-nav .nav-link {
-                font-size: 1rem; /* Smaller nav links on extra small screens */
-            }
-            .hero h1 {
-                font-size: 2rem; /* Even smaller hero title on extra small screens */
-            }
-            .hero p {
-                font-size: 0.9rem; /* Smaller hero text on extra small screens */
-            }
-        }
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #4e73df;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #3656b3;
-        }
-        /* Button Styles */
-        .btn-lg {
-            padding: 12px 30px;
-            font-size: 1.2rem;
-            border-radius: 5px;
-        }
-        .btn-light {
-            background: #f8f9fa;
-            color: #222;
-            border: 2px solid #4e73df;
-        }
-        .btn-light:hover {
-            background: #e2e6ea;
-            color: #4e73df;
-            transform: scale(1.05);
-        }
-        .btn-warning {
-            background: #ffc107;
-            color: #fff;
-            border: none;
-        }
-        .btn-warning:hover {
-            background: #e0a800;
-            transform: scale(1.05);
-        }
-        /* Navbar Toggler */
-        .navbar-toggler {
-            border: none;
-            background: transparent;
-        }
-        .navbar-toggler-icon {
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='white' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
-        }
-        /* Feature Card Hover Effect */
-        .feature-card:hover {
-            transform: translateY(-10px) scale(1.02);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-            border-color: #4e73df;
-        }
-        /* Hero Section Adjustments */
-        .hero {
-            background: linear-gradient(to right, #4e73df, #1cc88a);
-            color: white;
-            padding: 120px 20px;
+            padding: 18px 0;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            letter-spacing: 0.8px;
+            user-select: none;
             text-align: center;
         }
-        .hero h1 {
-            font-weight: 800;
-            font-size: 3rem;
+        footer i {
+            color: #ffc107;
+            font-size: 1.1rem;
+            vertical-align: middle;
+            animation: pulseHeart 2s infinite;
         }
-        .hero p {
-            font-size: 1.2rem;
-            font-weight: 500;
+        @keyframes pulseHeart {
+            0%, 100% { transform: scale(1); color: #ffc107; }
+            50% { transform: scale(1.2); color: #ffea3d; }
         }
-        /* Responsive Adjustments */
+
+        /* Responsive adjustments */
         @media (max-width: 768px) {
             .navbar-brand {
-                font-size: 1.5rem; /* Smaller brand name on mobile */
-            }
-            .hero h1 {
-                font-size: 2.5rem; /* Smaller hero title on mobile */
-            }
-            .hero p {
-                font-size: 1rem; /* Smaller hero text on mobile */
+                font-size: 2.2rem;
+                padding-right: 20px;
+                margin-right: 20px;
             }
             .feature-icon {
-                font-size: 40px; /* Smaller icons on mobile */
+                font-size: 80px;
+            }
+            .feature-card h5 {
+                font-size: 1.25rem;
             }
         }
         @media (max-width: 576px) {
             .navbar-nav .nav-link {
-                font-size: 1rem; /* Smaller nav links on extra small screens */
+                font-size: 1rem;
             }
-            .hero h1 {
-                font-size: 2rem; /* Even smaller hero title on extra small screens */
+            .hero-timesheet {
+                width: 95vw;
             }
-            .hero p {
-                font-size: 0.9rem; /* Smaller hero text on extra small screens */
+            #features h2 {
+                font-size: 2.3rem;
             }
         }
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #4e73df;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #3656b3;
-        }
-        /* Feedback Section Styling */
-.feedback-card {
-    border-left: 5px solid #4e73df;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    background: white;
-    font-weight: 200;
-}
-
-.feedback-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-}
-
-.feedback-card p {
-    font-size: 1.5rem;
-    line-height: 1.5;
-}
-/* ===== ABOUT SECTION STYLING ===== */
-#about {
-    background: linear-gradient(to right, #f8f9fc, #e9f2ff); /* Soft gradient */
-    padding: 80px 20px;
-    
-}
-
-#about h2 {
-    font-size: 2.5rem;
-    color: #4e73df; /* Brand blue */
-    font-weight: 700;
-    position: relative;
-    display: inline-block;
-}
-
-#about h2::after {
-    content: '';
-    display: block;
-    width: 70px;
-    height: 4px;
-    background-color: #1cc88a; /* Green accent */
-    margin: 10px auto 0;
-    border-radius: 2px;
-}
-
-#about p {
-    font-size: 1.3rem;
-    line-height: 1.7;
-    max-width: 850px;
-    margin: auto;
-    color: #555;
-}
-
-#about .lead {
-    font-size: 1.2rem;
-    font-weight: 500;
-    color: #333;
-}
-
-/* Animation for fade-in effect */
-#about {
-    animation: fadeInUp 0.8s ease-out;
-}
-
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-
-
     </style>
 </head>
 <body>
@@ -350,55 +282,65 @@
 <!-- Navbar -->
 <nav class="navbar navbar-expand-lg fixed-top">
     <div class="container">
-        <a class="navbar-brand" href="#">TimesheetApp</a>
+        <a class="navbar-brand" href="#">
+            <i class="bi bi-clock-history"></i>
+            Tickr
+        </a>
         <button class="navbar-toggler text-white" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto">
+            <ul class="navbar-nav ms-auto align-items-center gap-3">
                 <li class="nav-item"><a class="nav-link active" href="#">Home</a></li>
                 <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
-                <!-- <li class="nav-item"><a class="nav-link login-btn" href="#">Login</a></li>
-                <li class="nav-item"><a class="nav-link signup-btn" href="#">Sign Up</a></li> -->
+                <li class="nav-item">
+                    <a href="{% url 'login' %}" class="btn btn-light ms-3">Login</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{% url 'signup' %}" class="btn btn-warning ms-3">Sign Up</a>
+                </li>
             </ul>
         </div>
     </div>
 </nav>
 
-
-<!-- Hero Section -->
-<section class="hero">
-    <div class="container">
-        <h1>Welcome to Timesheet & Reporting App</h1>
-        <p class="lead">Track work hours, manage approvals, and generate reports with ease.</p>
-        <a href="{% url 'login' %}" class="btn btn-light btn-lg me-2"><i class="bi bi-box-arrow-in-right"></i> Login</a>
-        <a href="{% url 'signup' %}" class="btn btn-warning btn-lg"><i class="bi bi-person-plus-fill"></i> Sign Up</a>
+<!-- Hero Section: ONLY the tickr1 image -->
+<section class="hero-section-custom">
+    <div class="hero-images-row">
+        <div class="hero-img-card">
+            <img src="static/images/tickr2.png" alt="Effortless Time Tracking"/>
+        </div>
+        <div class="hero-img-card">
+            <img src="static/images/tickr1.jpg" alt="Timesheet Feature Demo"/>
+        </div>
     </div>
+    <p class="hero-text" style="font-weight:700; font-size:1.5rem; color:#5c4a99; margin-top:14px;">
+        Track work hours, manage approvals, and generate reports with ease.
+    </p>
 </section>
+
+
 <!-- About Section -->
 <section id="about" class="py-5">
     <div class="container text-center">
         <h2 class="fw-bold mb-4">About TimesheetApp</h2>
         <p class="lead text-muted mb-4">
-            TimesheetApp is a modern time tracking and reporting platform designed to help 
-            businesses efficiently manage work hours, approvals, and performance insights.  
-            Our mission is to simplify the way teams track their time, submit approvals, and 
+            TimesheetApp is a modern time tracking and reporting platform designed to help
+            businesses efficiently manage work hours, approvals, and performance insights.
+            Our mission is to simplify the way teams track their time, submit approvals, and
             generate detailed reports — all in one secure, user-friendly application.
         </p>
         <p class="text-muted mb-4">
-            Whether you're a small business or a large enterprise, TimesheetApp empowers managers 
-            and employees with tools to improve productivity, reduce administrative overhead, 
+            Whether you're a small business or a large enterprise, TimesheetApp empowers managers
+            and employees with tools to improve productivity, reduce administrative overhead,
             and make informed decisions based on accurate time data.
         </p>
         <p class="text-muted">
-            Built with the latest technology and a strong focus on user experience, TimesheetApp 
-            ensures smooth navigation, robust security, and reliable performance. 
-            Our goal is to help companies save time, cut costs, and foster a culture of 
-            transparency and accountability in the workplace.
+            Built with the latest technology and a strong focus on user experience, TimesheetApp
+            ensures smooth navigation, robust security, and reliable performance.
         </p>
     </div>
 </section>
-
 
 <!-- Features Section -->
 <section id="features" class="py-5">
@@ -430,30 +372,13 @@
     </div>
 </section>
 
-<!-- Image Gallery -->
-<!-- <section class="py-5 bg-light">
-    <div class="container text-center gallery">
-        <div class="row g-4">
-            <div class="col-md-4">
-                <img src="https://images.unsplash.com/photo-1581091215360-6a81a26f3a4b" class="img-fluid shadow" alt="Time Tracking">
-            </div>
-            <div class="col-md-4">
-                <img src="https://images.unsplash.com/photo-1591696205602-2f950c417cb9" class="img-fluid shadow" alt="Approvals">
-            </div>
-            <div class="col-md-4">
-                <img src="https://images.unsplash.com/photo-1556157382-97eda2f9e2b8" class="img-fluid shadow" alt="Reports">
-            </div>
-        </div>
-    </div>
-</section> -->
-<!-- Customers & Feedback Section -->
+<!-- Customers & Feedback Section (Keep as is) -->
 <section class="py-5 bg-light">
     <div class="container">
         <h2 class="text-center fw-bold mb-4">Our Customers & Feedback</h2>
         <p class="text-center text-muted mb-5">
             See what our clients have to say about their experience with TimesheetApp.
         </p>
-
         <div class="row g-4">
             <!-- Customer 1 -->
             <div class="col-md-4">
@@ -461,71 +386,61 @@
                     <div class="d-flex align-items-center mb-3">
                         <img src="https://cdn-icons-png.flaticon.com/512/219/219969.png" 
                              alt="Sarah Williams" 
-                             class="rounded-circle me-3" width="50" height="50">
+                             class="rounded-circle me-3" width="50" height="50" />
                         <div>
                             <h6 class="fw-bold mb-0">Sarah Williams</h6>
                             <small class="text-secondary">HR Manager, TechNova Solutions</small>
                         </div>
                     </div>
-                    <p class="text-muted">"TimesheetApp made tracking employee hours effortless. The approval workflow is simple and saves us a lot of time!"</p>
+                    <p class="text-muted">
+                        "TimesheetApp made tracking employee hours effortless. The approval workflow is simple and saves us a lot of time!"
+                    </p>
                 </div>
             </div>
-
             <!-- Customer 2 -->
             <div class="col-md-4">
                 <div class="card shadow-sm p-4 feedback-card">
                     <div class="d-flex align-items-center mb-3">
                         <img src="https://cdn-icons-png.flaticon.com/512/236/236831.png" 
                              alt="Rajesh Kumar" 
-                             class="rounded-circle me-3" width="50" height="50">
+                             class="rounded-circle me-3" width="50" height="50" />
                         <div>
                             <h6 class="fw-bold mb-0">Rajesh Kumar</h6>
                             <small class="text-secondary">Project Lead, Innovate Corp</small>
                         </div>
                     </div>
-                    <p class="text-muted">"The reporting feature is amazing. We can generate project-wise summaries in seconds. Highly recommend!"</p>
+                    <p class="text-muted">
+                        "The reporting feature is amazing. We can generate project-wise summaries in seconds. Highly recommend!"
+                    </p>
                 </div>
             </div>
-
             <!-- Customer 3 -->
             <div class="col-md-4">
                 <div class="card shadow-sm p-4 feedback-card">
                     <div class="d-flex align-items-center mb-3">
                         <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" 
                              alt="Emily Johnson" 
-                             class="rounded-circle me-3" width="50" height="50">
+                             class="rounded-circle me-3" width="50" height="50" />
                         <div>
                             <h6 class="fw-bold mb-0">Emily Johnson</h6>
                             <small class="text-secondary">Operations Head, WorkSmart Inc</small>
                         </div>
                     </div>
-                    <p class="text-muted">"As a manager, I love how I can approve timesheets on the go. The system is fast, secure, and reliable. Highly Recommended!"</p>
+                    <p class="text-muted">
+                        "As a manager, I love how I can approve timesheets on the go. The system is fast, secure, and reliable. Highly Recommended!"
+                    </p>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
-
 <!-- Footer -->
-<footer class="text-center">
-    <p>&copy; 2025 TimesheetApp | Built with <i class="bi bi-heart-fill text-danger"></i> by Your Team</p>
+<footer>
+    <p>&copy; 2025 TimesheetApp | Built with <i class="bi bi-heart-fill"></i> by Your Team</p>
 </footer>
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-<!-- Smooth Scroll JS -->
-<script>
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener("click", function(e) {
-            e.preventDefault();
-            document.querySelector(this.getAttribute("href")).scrollIntoView({
-                behavior: "smooth"
-            });
-        });
-    });
-</script>
-
 </body>
 </html>

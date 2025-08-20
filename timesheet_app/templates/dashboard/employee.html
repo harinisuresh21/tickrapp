@@ -6,7 +6,7 @@
 
             <div class="topbar">
             <div>
-                <h2 style="margin:0">Welcome back, {{ user.first_name|default:user.username }}</h2>
+                <h2 class="topbar1">Welcome back, {{ user.first_name|default:user.username }}</h2>
                 <div class="small text-muted">Here's your activity and quick actions</div>
             </div>
                 <!-- Dashboard notifications hidden by request -->
@@ -117,6 +117,10 @@
 
 <!-- Styles -->
 <style>
+    .topbar1{
+        font-size: 2rem;
+        font-weight: 700;
+    }
 .start-timer-card {
     border-radius: 12px;
     background: linear-gradient(135deg, #f8f9fa, #e9ecef);
@@ -196,6 +200,7 @@
     transform: scale(1.2);
     cursor: pointer;
 }
+
 </style>
 <script>
 // AJAX start-timer and stop-timer handling
