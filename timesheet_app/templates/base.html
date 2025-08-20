@@ -68,15 +68,18 @@
 </nav>
 
 <div class="d-flex">
-    <div class="sidebar">
-        <h5 class="text-light">Workspace</h5>
-        <a href="{% url 'add_time_entry' %}"><i class="fa-solid fa-play me-2"></i> Start Timer</a>
-        <a href="{% url 'my_timesheet' %}"><i class="fa-solid fa-calendar-days me-2"></i> My Timesheet</a>
-        <a href="{% url 'my_reports' %}"><i class="fa-solid fa-chart-pie me-2"></i> Reports</a>
-    </div>
-    <div class="content-wrapper">
-        {% block content %}{% endblock %}
-    </div>
+  {% block sidebar %}
+  <div class="sidebar">
+    <h5 class="text-light">Workspace</h5>
+    <a href="{% url 'add_time_entry' %}"><i class="fa-solid fa-play me-2"></i> Start Timer</a>
+    <a href="{% url 'my_timesheet' %}"><i class="fa-solid fa-calendar-days me-2"></i> My Timesheet</a>
+    <a href="{% url 'my_reports' %}"><i class="fa-solid fa-chart-pie me-2"></i> Reports</a>
+  </div>
+  {% endblock %}
+
+  <div class="content-wrapper">
+    {% block content %}{% endblock %}
+  </div>
 </div>
 
 <footer class="text-center py-3 border-top">

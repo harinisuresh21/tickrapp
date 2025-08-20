@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container my-4">
+  <h3>Manager Reports: Hours by Project</h3>
+  <div class="mb-3">
+    <form method="GET">
+      <div class="row">
+        <div class="col-md-3"><input type="date" name="start_date" class="form-control" value="{{ start }}"></div>
+        <div class="col-md-3"><input type="date" name="end_date" class="form-control" value="{{ end }}"></div>
+        <div class="col-md-2"><button class="btn btn-primary">Filter</button></div>
+        <div class="col-md-2"><a class="btn btn-outline-secondary" href="?export=csv&start_date={{ start }}&end_date={{ end }}">Export CSV</a></div>
+      </div>
+    </form>
+  </div>
+  <table class="table">
+    <thead><tr><th>Project</th><th>Hours</th><th>Billable Hours</th><th>% Billable</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+        <tr>
+          <td>{{ r.project }}</td>
+          <td>{{ r.hours }}</td>
+          <td>{{ r.billable_hours }}</td>
+          <td>{{ r.percent_billable }}%</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="small text-muted">Total hours: {{ total_hours }}</div>
+</div>
+{% endblock %}

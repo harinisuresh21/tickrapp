@@ -149,3 +149,15 @@ class TimesheetEntryForm(forms.ModelForm):
         if commit:
             entry.save()
         return entry
+
+
+class ProjectForm(forms.ModelForm):
+    class Meta:
+        model = Project
+        fields = ["name", "client", "billable_default", "active"]
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "form-control"}),
+            "client": forms.TextInput(attrs={"class": "form-control"}),
+            "billable_default": forms.CheckboxInput(),
+            "active": forms.CheckboxInput(),
+        }

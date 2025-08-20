@@ -72,6 +72,16 @@
         <a href="{% url 'employee_dashboard' %}" class="btn btn-outline-secondary px-4 py-2 rounded-3 shadow-sm hover-scale">⬅ Back</a>
         <a href="{% url 'add_time_entry' %}" class="btn btn-primary px-4 py-2 rounded-3 shadow-sm hover-scale">➕ Add Entry</a>
     </div>
+    <div class="mt-3 d-flex justify-content-end">
+        {% if week_status == 'draft' %}
+        <form method="post" action="{% url 'submit_week' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-warning">Submit Week for Approval</button>
+        </form>
+        {% else %}
+            <div class="text-muted">This week is <strong>{{ week_status|capfirst }}</strong>.</div>
+        {% endif %}
+    </div>
 </div>
 
 <!-- Extra Styling -->

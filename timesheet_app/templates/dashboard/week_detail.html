@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container my-4">
+  <h3>Week Detail: {{ week.user.get_full_name|default:week.user.username }} — {{ week.week_start }}</h3>
+  <div class="mb-3">
+    <form method="POST">
+      {% csrf_token %}
+      <div class="mb-2">
+        <label for="note">Audit Note (optional)</label>
+        <textarea name="note" id="note" class="form-control">{{ week.audit_note }}</textarea>
+      </div>
+      <div class="mb-2">
+        <label for="manager_comment">Manager Comment (optional)</label>
+        <textarea name="manager_comment" id="manager_comment" class="form-control">{{ week.manager_comment }}</textarea>
+      </div>
+      <button name="action" value="approve" class="btn btn-success">Approve</button>
+      <button name="action" value="reject" class="btn btn-danger">Reject</button>
+    </form>
+  </div>
+
+  {% if week.manager_comment %}
+    <div class="alert alert-info">Manager comment: <strong>{{ week.manager_comment }}</strong></div>
+  {% endif %}
+
+  <h5>Entries</h5>
+  <table class="table">
+    <thead><tr><th>Date</th><th>Project</th><th>Start</th><th>End</th><th>Hours</th></tr></thead>
+    <tbody>
+      {% for e in entries %}
+      <tr>
+        <td>{{ e.work_date }}</td>
+        <td>{{ e.project.name|default:'Unassigned' }}</td>
+        <td>{{ e.start_time|time:'H:i' }}</td>
+        <td>{{ e.end_time|time:'H:i'|default:'-' }}</td>
+        <td>{{ e.duration_minutes|default:0|floatformat:2 }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

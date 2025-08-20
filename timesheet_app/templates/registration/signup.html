@@ -1,65 +1,209 @@
 {% load static %}
+{% load widget_tweaks %}
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign Up | TimesheetApp</title>
+
+  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- FontAwesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
   <style>
-    .auth-card { max-width: 520px; margin: 70px auto; }
-    .btn-brand { background:#1cc88a; color:#fff; }
-    .btn-brand:hover { background:#159d6f; color:#fff; }
-    .role-picker .form-check { margin-right: 18px; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f6f9;
+    }
+
+    .signup-wrapper {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Left SignUp Section */
+    .signup-section {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: white;
+      padding: 30px;
+    }
+
+    .signup-card {
+      width: 100%;
+      max-width: 460px;
+      background: #ffffff;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15);
+      animation: slideUp 0.8s ease-in-out;
+    }
+
+    .signup-card h3 {
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #1cc88a;
+      text-align: center;
+    }
+
+    .signup-card p {
+      text-align: center;
+      color: #6c757d;
+      margin-bottom: 20px;
+    }
+
+    .input-group {
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .input-group-text {
+      background: #f1f3f6;
+      border: none;
+      color: #1cc88a;
+      font-size: 18px;
+    }
+
+    .form-control {
+      border: none;
+      padding: 12px;
+      font-size: 15px;
+    }
+
+    .btn-signup {
+      background: linear-gradient(135deg, #1cc88a, #4e73df);
+      color: white;
+      font-weight: bold;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .btn-signup:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .role-picker {
+      display: flex;
+      gap: 20px;
+    }
+
+    .text-center a {
+      text-decoration: none;
+      font-weight: bold;
+      color: #1cc88a;
+    }
+
+    .text-center a:hover {
+      text-decoration: underline;
+    }
+
+    /* Right Image Section */
+    .image-section {
+      flex: 1;
+      background: url("{% static 'images/home.png' %}") no-repeat center center;
+      background-size: cover;
+    }
+
+    /* Animations */
+    @keyframes slideUp {
+      from {
+        transform: translateY(40px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
   </style>
 </head>
-<body class="bg-light">
-  <div class="card shadow auth-card">
-    <div class="card-body">
-      <h3 class="mb-3 text-center">Create your account</h3>
+<body>
+
+<div class="signup-wrapper">
+  <!-- Left SignUp Section -->
+  <div class="signup-section">
+    <div class="signup-card">
+      <h3><i class="fa-solid fa-user-plus"></i> Create Your Account</h3>
+      <p>Sign up to start managing your timesheets</p>
+
       {% if messages %}
         {% for m in messages %}
           <div class="alert alert-{{ m.tags }}">{{ m }}</div>
         {% endfor %}
       {% endif %}
+
       <form method="post" novalidate>
         {% csrf_token %}
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label">Username</label>
-            {{ form.username }}
-            {{ form.username.errors }}
+        
+        <div class="mb-3">
+          <label class="form-label">Username</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
+            {{ form.username|add_class:"form-control" }}
           </div>
-          <div class="col-md-6">
-            <label class="form-label">Email</label>
-            {{ form.email }}
-            {{ form.email.errors }}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Password</label>
-            {{ form.password1 }}
-            {{ form.password1.errors }}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Confirm Password</label>
-            {{ form.password2 }}
-            {{ form.password2.errors }}
-          </div>
+          {{ form.username.errors }}
         </div>
 
-        <div class="mt-3">
+        <div class="mb-3">
+          <label class="form-label">Email</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fa-solid fa-envelope"></i></span>
+            {{ form.email|add_class:"form-control" }}
+          </div>
+          {{ form.email.errors }}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+            {{ form.password1|add_class:"form-control" }}
+          </div>
+          {{ form.password1.errors }}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Confirm Password</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+            {{ form.password2|add_class:"form-control" }}
+          </div>
+          {{ form.password2.errors }}
+        </div>
+
+        <div class="mb-3">
           <label class="form-label d-block">Select Role</label>
-          <div class="role-picker d-flex">
+          <div class="role-picker">
             {{ form.role }}
           </div>
           {{ form.role.errors }}
         </div>
 
-        <button class="btn btn-brand w-100 mt-4" type="submit">Sign Up</button>
+        <button type="submit" class="btn btn-signup w-100 mt-3">
+          <i class="fa-solid fa-user-check"></i> Sign Up
+        </button>
       </form>
-      <p class="text-center mt-3 mb-0">
+
+      <p class="text-center mt-4">
         Already have an account? <a href="{% url 'login' %}">Login</a>
       </p>
     </div>
   </div>
+
+  <!-- Right Image Section -->
+  <div class="image-section"></div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

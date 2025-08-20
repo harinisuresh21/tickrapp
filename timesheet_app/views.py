@@ -13,8 +13,8 @@ import csv
 import datetime as dt
 import calendar
 
-from .models import TimesheetEntry, Project, WeekSummary, STATUS_DRAFT, STATUS_SUBMITTED, STATUS_APPROVED
-from .forms import SignUpForm, TimesheetEntryForm
+from .models import TimesheetEntry, Project, WeekSummary, STATUS_DRAFT, STATUS_SUBMITTED, STATUS_APPROVED, STATUS_REJECTED
+from .forms import SignUpForm, TimesheetEntryForm, ProjectForm
 from .decorators import role_required
 from .utils import get_current_week_bounds
 from django.template.loader import render_to_string
@@ -252,12 +252,166 @@ def manager_dashboard(request):
         approved_at__date__gte=month_start
     ).count()
 
+    # Users to show in manager dashboard (exclude superusers if desired)
+    employees = User.objects.filter(groups__name='Employee').order_by('username')
+    projects = Project.objects.all().order_by('name')
+
     context = {
         "pending_weeks": pending_weeks,
         "approved_this_month": approved_this_month,
         "today": today,
+        "employees": employees,
+        "projects": projects,
     }
     return render(request, "dashboard/manager.html", context)
+
+
+# ------------------- Approvals -------------------
+@role_required("manager")
+@login_required
+def approvals_list(request):
+    pending = WeekSummary.objects.select_related('user').filter(status=STATUS_SUBMITTED).order_by('week_start')
+    return render(request, 'dashboard/approvals_list.html', {'pending': pending})
+
+
+@role_required('manager')
+@login_required
+def week_detail(request, week_id):
+    week = get_object_or_404(WeekSummary, pk=week_id)
+    entries = TimesheetEntry.objects.filter(user=week.user, work_date__range=(week.week_start, week.week_start + dt.timedelta(days=6))).select_related('project')
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        note = request.POST.get('note', '')
+        manager_comment = request.POST.get('manager_comment', '')
+        if action == 'approve':
+            week.status = STATUS_APPROVED
+            week.approver = request.user
+            week.approved_at = timezone.now()
+            week.audit_note = note
+            week.manager_comment = manager_comment
+            week.save()
+            messages.success(request, 'Week approved.')
+        elif action == 'reject':
+            week.status = STATUS_REJECTED
+            week.approver = request.user
+            week.approved_at = timezone.now()
+            week.audit_note = note
+            week.manager_comment = manager_comment
+            week.save()
+            messages.success(request, 'Week rejected.')
+        return redirect('approvals_list')
+    return render(request, 'dashboard/week_detail.html', {'week': week, 'entries': entries})
+
+
+@role_required('employee')
+@login_required
+def submit_week(request):
+    # Submits the current user's week summary for manager review
+    week_start, week_end = get_current_week_bounds()
+    week, created = WeekSummary.objects.get_or_create(user=request.user, week_start=week_start)
+    week.status = STATUS_SUBMITTED
+    week.submitted_at = timezone.now()
+    week.save()
+    messages.success(request, 'Week submitted for approval.')
+    return redirect('my_timesheet')
+
+
+# ------------------- Manager Reports -------------------
+@role_required('manager')
+@login_required
+def manager_reports(request):
+    # Hours by project within date range
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    try:
+        start = dt.date.fromisoformat(start_date) if start_date else dt.date.today() - dt.timedelta(days=30)
+    except Exception:
+        start = dt.date.today() - dt.timedelta(days=30)
+    try:
+        end = dt.date.fromisoformat(end_date) if end_date else dt.date.today()
+    except Exception:
+        end = dt.date.today()
+
+    qs = TimesheetEntry.objects.filter(work_date__range=(start, end)).select_related('project')
+    project_map = defaultdict(float)
+    billable_map = defaultdict(float)
+    for e in qs:
+        h = (e.duration_minutes or 0) / 60.0
+        name = e.project.name if e.project else 'Unassigned'
+        project_map[name] += h
+        if e.billable:
+            billable_map[name] += h
+
+    rows = []
+    total_hours = sum(project_map.values())
+    for name, hrs in project_map.items():
+        bill = billable_map.get(name, 0.0)
+        pct_bill = round((bill / hrs * 100) if hrs else 0, 2)
+        rows.append({'project': name, 'hours': round(hrs,2), 'billable_hours': round(bill,2), 'percent_billable': pct_bill})
+
+    # CSV export option
+    if request.GET.get('export') == 'csv':
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="hours_by_project.csv"'
+        response.write('\ufeff')
+        writer = csv.writer(response)
+        writer.writerow(['Project','Hours','Billable Hours','% Billable'])
+        for r in rows:
+            writer.writerow([r['project'], f"{r['hours']:.2f}", f"{r['billable_hours']:.2f}", f"{r['percent_billable']:.2f}"])
+        return response
+
+    return render(request, 'dashboard/manager_reports.html', {'rows': rows, 'start': start, 'end': end, 'total_hours': total_hours})
+
+
+# ------------------- Project CRUD (manager) -------------------
+@role_required('manager')
+@login_required
+def projects_list(request):
+    projects = Project.objects.all().order_by('name')
+    return render(request, 'dashboard/projects_list.html', {'projects': projects})
+
+
+@role_required('manager')
+@login_required
+def project_create(request):
+    if request.method == 'POST':
+        form = ProjectForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Project created.')
+            return redirect('projects_list')
+    else:
+        form = ProjectForm()
+    return render(request, 'dashboard/project_form.html', {'form': form})
+
+
+@role_required('manager')
+@login_required
+def project_edit(request, project_id):
+    proj = get_object_or_404(Project, pk=project_id)
+    if request.method == 'POST':
+        form = ProjectForm(request.POST, instance=proj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Project updated.')
+            return redirect('projects_list')
+    else:
+        form = ProjectForm(instance=proj)
+    return render(request, 'dashboard/project_form.html', {'form': form, 'project': proj})
+
+
+@role_required('manager')
+@login_required
+def project_delete(request, project_id):
+    proj = get_object_or_404(Project, pk=project_id)
+    if TimesheetEntry.objects.filter(project=proj).exists():
+        messages.error(request, 'Cannot delete project linked to timesheet entries.')
+        return redirect('projects_list')
+    if request.method == 'POST':
+        proj.delete()
+        messages.success(request, 'Project deleted.')
+        return redirect('projects_list')
+    return render(request, 'dashboard/project_confirm_delete.html', {'project': proj})
 
 
 # ------------------- Add / Edit Time Entry -------------------

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container my-4">
+  <h3>Pending Approvals</h3>
+  {% if pending %}
+    <table class="table">
+      <thead><tr><th>User</th><th>Week Start</th><th>Hours</th><th></th></tr></thead>
+      <tbody>
+        {% for w in pending %}
+          <tr>
+            <td>{{ w.user.get_full_name|default:w.user.username }}</td>
+            <td>{{ w.week_start }}</td>
+            <td>{{ w.total_hours|default:'-' }}</td>
+            <td><a href="{% url 'week_detail' w.id %}" class="btn btn-sm btn-primary">Review</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="alert alert-info">No submitted timesheets pending approval.</div>
+  {% endif %}
+</div>
+{% endblock %}

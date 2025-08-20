@@ -1,54 +1,104 @@
 {% extends "base.html" %}
 {% block title %}Manager Dashboard | TimesheetApp{% endblock %}
 
-{% block content %}
-<h3 class="mb-3">Manager Dashboard</h3>
+{% block sidebar %}
+<div class="sidebar">
+  <h5 class="text-light mb-3">Manager</h5>
+  <a href="{% url 'manager_dashboard' %}"><i class="fa-solid fa-home me-2"></i> Dashboard</a>
+  <a href="{% url 'approvals_list' %}"><i class="fa-solid fa-check-to-slot me-2"></i> Approvals</a>
+  <a href="{% url 'manager_reports' %}"><i class="fa-solid fa-chart-line me-2"></i> Reports</a>
+  <a href="{% url 'projects_list' %}"><i class="fa-solid fa-diagram-project me-2"></i> Projects</a>
+</div>
+{% endblock %}
 
-<div class="row g-3 mb-4">
-  <div class="col-md-4">
-    <div class="card card-kpi shadow-sm">
-      <div class="card-body">
-        <h6 class="text-muted mb-1">Approved This Month</h6>
-        <div class="display-6 fw-bold">{{ approved_this_month }}</div>
-        <small class="text-muted">as of {{ today }}</small>
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- Row: Employees & Projects -->
+  <div class="row g-4 mb-4">
+    <!-- Employees -->
+    <div class="col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-header fw-semibold">Employees</div>
+        <div class="list-group list-group-flush">
+          {% for emp in employees %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <div style="font-weight:600">{{ emp.get_full_name|default:emp.username }}</div>
+                <small class="text-muted">{{ emp.email }}</small>
+              </div>
+              <a href="{% url 'approvals_list' %}?user={{ emp.id }}" 
+                 class="btn btn-sm btn-outline-primary">View</a>
+            </div>
+          {% empty %}
+            <div class="list-group-item text-muted">No employees found.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Projects -->
+    <div class="col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-header fw-semibold">Projects</div>
+        <div class="list-group list-group-flush">
+          {% for p in projects %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <div style="font-weight:600">{{ p.name }}</div>
+                <small class="text-muted">{{ p.code }}</small>
+              </div>
+              <a href="{% url 'project_edit' p.id %}" 
+                 class="btn btn-sm btn-outline-secondary">Edit</a>
+            </div>
+          {% empty %}
+            <div class="list-group-item text-muted">No projects found.</div>
+          {% endfor %}
+        </div>
       </div>
     </div>
   </div>
-  <div class="col-md-8 d-flex justify-content-end align-items-start gap-2">
-    <a href="#" class="btn btn-outline-primary">Reports</a>
-    <a href="#" class="btn btn-outline-secondary">Projects</a>
-  </div>
-</div>
 
-<div class="card shadow-sm">
-  <div class="card-header fw-semibold">Pending Approvals</div>
-  <div class="table-responsive">
-    <table class="table table-hover mb-0 align-middle">
-      <thead class="table-light">
-      <tr>
-        <th>Employee</th>
-        <th>Week Start</th>
-        <th>Status</th>
-        <th>Actions</th>
-      </tr>
-      </thead>
-      <tbody>
-      {% for w in pending_weeks %}
-        <tr>
-          <td>{{ w.user.username }}</td>
-          <td>{{ w.week_start }}</td>
-          <td><span class="badge bg-warning text-dark">{{ w.status|title }}</span></td>
-          <td>
-            <a href="#" class="btn btn-sm btn-success">Approve</a>
-            <a href="#" class="btn btn-sm btn-danger">Reject</a>
-            <a href="#" class="btn btn-sm btn-outline-primary">View</a>
-          </td>
-        </tr>
-      {% empty %}
-        <tr><td colspan="4" class="text-center text-muted py-4">No submissions waiting.</td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
+  <!-- Row: Pending Approvals -->
+  <div class="card shadow-sm">
+    <div class="card-header fw-semibold">Pending Approvals</div>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Employee</th>
+            <th>Week Start</th>
+            <th>Status</th>
+            <th class="text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for w in pending_weeks %}
+          <tr>
+            <td>{{ w.user.get_full_name|default:w.user.username }}</td>
+            <td>{{ w.week_start|date:"M. d, Y" }}</td>
+            <td><span class="badge bg-warning text-dark">{{ w.status|title }}</span></td>
+            <td class="text-center">
+              <form method="post" action="{% url 'week_detail' w.id %}" style="display:inline">
+                {% csrf_token %}
+                <button type="submit" name="action" value="approve" class="btn btn-sm btn-success">Approve</button>
+              </form>
+              <form method="post" action="{% url 'week_detail' w.id %}" style="display:inline; margin-left:6px">
+                {% csrf_token %}
+                <button type="submit" name="action" value="reject" class="btn btn-sm btn-danger">Reject</button>
+              </form>
+              <a href="{% url 'week_detail' w.id %}" class="btn btn-sm btn-outline-primary" style="margin-left:6px">View</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="4" class="text-center text-muted py-4">No submissions waiting.</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
+
 </div>
 {% endblock %}

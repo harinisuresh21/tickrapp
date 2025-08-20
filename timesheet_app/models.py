@@ -121,6 +121,8 @@ class WeekSummary(models.Model):
     submitted_at = models.DateTimeField(null=True, blank=True)
     approved_at = models.DateTimeField(null=True, blank=True)
     audit_note = models.TextField(blank=True)
+    # Manager's comment or feedback when approving/rejecting
+    manager_comment = models.TextField(blank=True, null=True)
 
     class Meta:
         unique_together = ("user", "week_start")
